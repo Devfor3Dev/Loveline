@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot</title>
+
+    <script src="script.js"></script>
+    <script src="tries.js"></script>
+    <script src="https://unpkg.com/supersimpledev/react.js"></script>
+    <script src="https://unpkg.com/supersimpledev/react-dom.js"></script>
+    <script src="https://unpkg.com/supersimpledev@3.2.1/external-library.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="js-container"></div>
+    <script src="https://unpkg.com/supersimpledev/babel.js"></script>
+    <script type="text/babel">
+
+        function ChatMessage(props) {
+            const message = props.message
+            const sender = props.sender
+
+            if(sender === 'robot'){
+                return (
+                    <div>
+                        Salut Chatbot de merde
+                        <img src="images/robot.png" alt="" width="50"/>
+                        {message}
+
+                    </div>
+                )
+            }
+
+        }
+
+        function ChatInput(){
+            return (
+                <>
+                    <input placeholder="Envoyez un message au chatbot" type="text" size="30"></input>
+                    <button>Envoyer</button>
+                </>
+
+            )
+        }
+
+
+        const app = (
+            <>
+                <ChatInput></ChatInput>
+                <ChatMessage message="salut le Chatbot de merde" sender="user"></ChatMessage>
+                <ChatMessage message="salut comment puis-je vous aider ?" sender="robot"></ChatMessage>
+                <ChatMessage message="Donne moi la date d'aujourd'hui" sender="user"></ChatMessage>
+                <ChatMessage message="Aujourd'hui c'est le 16 février"  sender="robot"></ChatMessage>
+
+            </>
+            )
+
+        const container = document.querySelector(".js-container");
+
+        ReactDOM.createRoot(container).render(app)
+    </script>
+
+
+</body>
+</html>
