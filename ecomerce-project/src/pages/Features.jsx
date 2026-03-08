@@ -24,7 +24,7 @@ const FEATURES = [
             </svg>
         ),
         title: 'Campus Exclusif',
-        desc: 'Seuls les étudiants de ton université ont accès à la plateforme. Vérifié par email académique. Un espace sûr, réservé à ta communauté.',
+        desc: 'Seuls les étudiants de ton université ont accès à la plateforme. Vérifié par email. Un espace sûr, réservé à ta communauté.',
     },
     {
         icon: (
@@ -33,8 +33,8 @@ const FEATURES = [
                 <path d="M10 16l4 4 8-8" stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
         ),
-        title: 'Profils Vérifiés',
-        desc: "Chaque profil est authentifié. Pas de faux comptes, pas d'arnaque. Juste de vraies personnes qui cherchent de vraies connexions comme toi.",
+        title: "N'ai plus peur",
+        desc: "Ne crais plus d'avouer tes sentiments à la personne qui te plait le plus.",
     },
     {
         icon: (

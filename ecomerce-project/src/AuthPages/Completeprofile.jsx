@@ -8,12 +8,12 @@
  */
 import React, {
     useState, useEffect, useRef, useCallback, useMemo,
-    useLayoutEffect, forwardRef, useImperativeHandle
+
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    motion, AnimatePresence, useMotionValue, useTransform,
-    useSpring, useScroll, LayoutGroup, animate
+    motion, AnimatePresence,
+    useSpring, useScroll, animate
 } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger }    from 'gsap/ScrollTrigger';
@@ -30,6 +30,33 @@ import { toast, Toaster } from 'react-hot-toast';
 import Navbar from '../pages/nav_bar.jsx';
 
 gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
+
+// ── Maps de conversion frontend → backend ─────────────────────────────────
+const DEPARTMENT_MAP = {
+    'FAST (Sciences & Tech)':                 'FAST',
+    'FLESH (Lettres & Sciences Humaines)':    'FLESH',
+    'FDSP (Droit & Économie)':                'FDSP',
+    'FASEG (Economie & Gestion)':             'FASEG',
+    'FSS (Médecine & Sciences de la Santé)':  'FSS',
+    'ISAPU (Enseignement)':                   'ISAPU',
+    "ISMA (Metier de l'Agriculture)":         'ISMA',
+    'PSE (Institut Formation Santé)':         'PSE',
+    'Autre':                                  'OTHER',
+};
+
+const DEGREE_MAP = {
+    'Licence 1': 'L1',
+    'Licence 2': 'L2',
+    'Licence 3': 'L3',
+    'Master 1':  'M1',
+    'Master 2':  'M2',
+    'Doctorat':  'PHD',
+};
+
+const GENDER_MAP = {
+    'homme': 'Homme',
+    'femme': 'Femme',
+};
 
 // PART 1 — tokens + config (Updated for a Professional Look)
 const T = {
@@ -121,6 +148,7 @@ const MAX_BIO_WORDS = 80;
 const MIN_INTERESTS = 3;
 const MAX_INTERESTS = 6;
 const MIN_AGE = 16;
+const MAX_AGE = 40;
 
 function countWords(str) { return str.trim().split(/\s+/).filter(Boolean).length; }
 function calculateAge(d) {
@@ -140,7 +168,12 @@ function useParticleCanvas(ref) {
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         let raf, W, H;
-        function resize() { W = canvas.offsetWidth; H = canvas.offsetHeight; canvas.width = W; canvas.height = H; }
+        function resize() {
+            W = canvas.offsetWidth;
+            H = canvas.offsetHeight;
+            canvas.width = W;
+            canvas.height = H;
+        }
         resize();
         const pts = Array.from({length:80}, () => ({
             x: Math.random()*W, y: Math.random()*H,
@@ -177,21 +210,125 @@ const AnimatedMesh = React.memo(function AnimatedMesh() {
     const canvasRef = useRef(null);
     useParticleCanvas(canvasRef);
     return (
-        <div style={{position:'fixed',inset:0,zIndex:0,overflow:'hidden',pointerEvents:'none'}}>
-            <motion.div animate={{x:[0,50,-25,0],y:[0,-40,25,0],scale:[1,1.12,.94,1]}} transition={{duration:20,repeat:Infinity,ease:'easeInOut'}}
-                        style={{position:'absolute',top:'-12%',left:'-8%',width:'65vw',height:'65vw',borderRadius:'50%',
-                            background:'radial-gradient(circle,rgba(230,230,250,.6) 0%,transparent 70%)',filter:'blur(44px)'}}/>
-            <motion.div animate={{x:[0,-35,22,0],y:[0,48,-15,0],scale:[1,.88,1.14,1]}} transition={{duration:25,repeat:Infinity,ease:'easeInOut',delay:4}}
-                        style={{position:'absolute',bottom:'-12%',right:'-8%',width:'55vw',height:'55vw',borderRadius:'50%',
-                            background:'radial-gradient(circle,rgba(212,175,55,.08) 0%,transparent 70%)',filter:'blur(52px)'}}/>
-            <motion.div animate={{x:[0,25,-35,0],y:[0,-25,35,0],scale:[1,1.08,.92,1]}} transition={{duration:17,repeat:Infinity,ease:'easeInOut',delay:9}}
-                        style={{position:'absolute',top:'35%',left:'38%',width:'32vw',height:'32vw',borderRadius:'50%',
-                            background:'radial-gradient(circle,rgba(136,14,79,.06) 0%,transparent 70%)',filter:'blur(32px)'}}/>
-            <canvas ref={canvasRef} style={{position:'absolute',inset:0,width:'100%',height:'100%',opacity:.65}}/>
-            <div style={{position:'absolute',inset:0,
-                backgroundImage:'linear-gradient(rgba(136,14,79,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(136,14,79,0.02) 1px,transparent 1px)',
-                backgroundSize:'40px 40px'}}/>
-            <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at 50% 50%,transparent 50%,rgba(253,246,240,.6) 100%)'}}/>
+        <div style={
+            {
+                position:'fixed',
+                top:0, left:0, right:0, bottom:0,
+                zIndex:0,
+                overflow:'hidden',
+                pointerEvents:'none',
+                willChange:'transform',   // ← force la couche GPU dès le départ
+                transform:'translateZ(0)', // ← compatibilité Safari
+            }
+        }
+        >
+            <motion.div animate={
+                {
+                    x:[0,50,-25,0],
+                    y:[0,-40,25,0],
+                    scale:[1,1.12,.94,1]
+                }
+            } transition={
+                {
+                    duration:20,
+                    repeat:Infinity,
+                    ease:'easeInOut'
+                }
+            } style={
+                {
+                    position:'absolute',
+                    top:'-12%',
+                    left:'-8%',
+                    width:'65vw',
+                    height:'65vw',
+                    borderRadius:'50%',
+                    background:'radial-gradient(circle,rgba(230,230,250,.6) 0%,transparent 70%)',
+                    filter:'blur(44px)'
+                }
+            }
+            />
+
+            <motion.div animate={
+                {
+                    x:[0,-35,22,0],
+                    y:[0,48,-15,0],
+                    scale:[1,.88,1.14,1]
+                }
+            } transition={
+                {
+                    duration:25,
+                    repeat:Infinity,
+                    ease:'easeInOut',
+                    delay:4
+                }
+            } style={
+                {
+                    position:'absolute',
+                    bottom:'-12%',
+                    right:'-8%',
+                    width:'55vw',
+                    height:'55vw',
+                    borderRadius:'50%',
+                    background:'radial-gradient(circle,rgba(212,175,55,.08) 0%,transparent 70%)',
+                    filter:'blur(52px)'
+                }
+            }
+            />
+
+            <motion.div animate={
+                {
+                    x:[0,25,-35,0],
+                    y:[0,-25,35,0],
+                    scale:[1,1.08,.92,1]
+                }
+            } transition={
+                {
+                    duration:17,
+                    repeat:Infinity,
+                    ease:'easeInOut',
+                    delay:9
+                }
+            } style={
+                {
+                    position:'absolute',
+                    top:'35%',
+                    left:'38%',
+                    width:'32vw',
+                    height:'32vw',
+                    borderRadius:'50%',
+                    background:'radial-gradient(circle,rgba(136,14,79,.06) 0%,transparent 70%)',
+                    filter:'blur(32px)'
+                }
+            }
+            />
+
+            <canvas ref={canvasRef}
+                style={
+                {
+                    position:'absolute',
+                    inset:0,
+                    width:'100%',
+                    height:'100%',
+                    opacity:.65
+                }
+            }
+            />
+
+            <div style={
+                {
+                    position:'absolute',
+                    inset:0,
+                    backgroundImage:'linear-gradient(rgba(136,14,79,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(136,14,79,0.02) 1px,transparent 1px)',
+                    backgroundSize:'40px 40px'
+                }
+            }/>
+
+            <div style={
+                {
+                    position:'absolute',
+                    inset:0,
+                    background:'radial-gradient(ellipse at 50% 50%,transparent 50%,rgba(253,246,240,.6) 100%)'
+                }}/>
         </div>
     );
 });
@@ -202,12 +339,38 @@ const FloatingHearts = React.memo(function FloatingHearts() {
         delay:i*1.8, duration:14+i*3, opacity:[.06,.1,.05,.08,.12,.06][i],
     })),[]);
     return (
-        <div style={{position:'fixed',inset:0,zIndex:0,pointerEvents:'none',overflow:'hidden'}}>
+        <div style={
+            {
+                position:'fixed',
+                inset:0,
+                zIndex:0,
+                pointerEvents:'none',
+                overflow:'hidden'
+            }}>
+
             {hearts.map(h=>(
                 <motion.div key={h.id}
-                            animate={{y:['100vh','-20vh'],x:[0,Math.sin(h.id)*30,0],rotate:[0,15,-15,0],opacity:[0,h.opacity,h.opacity,0]}}
-                            transition={{duration:h.duration,delay:h.delay,repeat:Infinity,ease:'linear'}}
-                            style={{position:'absolute',left:h.left,bottom:0}}>
+                            animate={
+                    {
+                        y:['100vh','-20vh'],
+                        x:[0,Math.sin(h.id)*30,0],
+                        rotate:[0,15,-15,0],
+                        opacity:[0,h.opacity,h.opacity,0]
+                    }}
+                            transition={
+                    {
+                        duration:h.duration,
+                        delay:h.delay,
+                        repeat:Infinity,
+                        ease:'linear'
+                    }}
+                            style={
+                    {
+                        position:'absolute',
+                        left:h.left,
+                        bottom:0
+                    }}>
+
                     <Heart size={h.size} color={T.roseDeep} fill={T.roseDeep}/>
                 </motion.div>
             ))}
@@ -224,9 +387,28 @@ const ProgressIndicator = React.memo(function ProgressIndicator({stepIndex, pct}
     },[pct]);
 
     return (
-        <div style={{display:'flex',alignItems:'center',gap:24,flexWrap:'wrap'}}>
-            <div style={{position:'relative',width:76,height:76,flexShrink:0}}>
-                <svg width={76} height={76} style={{transform:'rotate(-90deg)',overflow:'visible'}}>
+        <div style={
+            {
+                display:'flex',
+                alignItems:'center',
+                gap:24,
+                flexWrap:'wrap'
+            }}>
+
+            <div style={
+                {
+                    position:'relative',
+                    width:76,
+                    height:76,
+                    flexShrink:0
+                }}>
+
+                <svg width={76} height={76} style={
+                    {
+                        transform:'rotate(-90deg)',
+                        overflow:'visible'
+                    }}>
+
                     <defs>
                         <linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stopColor={T.roseDeep}/>
@@ -234,36 +416,144 @@ const ProgressIndicator = React.memo(function ProgressIndicator({stepIndex, pct}
                         </linearGradient>
                         <filter id="gf"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                     </defs>
-                    <circle cx={38} cy={38} r={28} fill="none" stroke="rgba(136,14,79,0.1)" strokeWidth={4}/>
-                    <motion.circle cx={38} cy={38} r={28} fill="none" stroke="url(#cg)" strokeWidth={4} strokeLinecap="round"
-                                   strokeDasharray={circ} animate={{strokeDashoffset:circ-(pct/100)*circ}} transition={{duration:.9,ease:'easeOut'}} filter="url(#gf)"/>
+
+                    <circle
+                        cx={38}
+                        cy={38}
+                        r={28}
+                        fill="none"
+                        stroke="rgba(136,14,79,0.1)"
+                        strokeWidth={4}
+                    />
+
+                    <motion.circle
+                        cx={38}
+                        cy={38}
+                        r={28}
+                        fill="none"
+                        stroke="url(#cg)"
+                        strokeWidth={4}
+                        strokeLinecap="round"
+                        strokeDasharray={circ}
+                        animate={
+                        {
+                            strokeDashoffset:circ-(pct/100)*circ
+                        }}
+                        transition={
+                        {
+                            duration:.9,
+                            ease:'easeOut'
+                        }} filter="url(#gf)"
+                    />
+
+
                 </svg>
-                <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-          <span style={{fontFamily:T.fontBody,fontSize:13,fontWeight:700,
-              background:`linear-gradient(135deg,${T.roseDeep},${T.gold})`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                <div
+                    style={
+                    {
+                        position:'absolute',
+                        inset:0,
+                        display:'flex',
+                        flexDirection:'column',
+                        alignItems:'center',
+                        justifyContent:'center'
+                    }}>
+
+          <span style={
+              {
+                  fontFamily:T.fontBody,
+                  fontSize:13,
+                  fontWeight:700,
+                  background:`linear-gradient(135deg,${T.roseDeep},${T.gold})`,
+                  WebkitBackgroundClip:'text',
+                  WebkitTextFillColor:'transparent'}}>
             {displayed}%
+
           </span>
                 </div>
             </div>
-            <div style={{flex:1,minWidth:200}}>
-                <div style={{display:'flex',gap:5,marginBottom:10,alignItems:'center'}}>
+            <div style={
+                {
+                    flex:1,
+                    minWidth:200
+                }}>
+
+                <div style={
+                    {
+                        display:'flex',
+                        gap:5,
+                        marginBottom:10,
+                        alignItems:'center'
+                    }}>
+
                     {STEPS.map((s,i)=>(
                         <motion.div key={s.id} layout
                                     animate={{
                                         background: i<stepIndex?`linear-gradient(135deg,${T.roseDeep},${T.goldDark})`:i===stepIndex?`linear-gradient(135deg,${T.roseDeep},${T.gold})`:'rgba(136,14,79,0.08)',
-                                        flex: i===stepIndex?2.2:1, height: i===stepIndex?8:6,
-                                    }} transition={{duration:.45}} style={{borderRadius:99}}/>
+                                        flex: i===stepIndex?2.2:1,
+                                        height: i===stepIndex?8:6,
+                                    }} transition={
+                            {
+                                duration:.45
+                            }} style={
+                            {
+                                borderRadius:99
+                            }}/>
                     ))}
                 </div>
-                <div style={{display:'flex',alignItems:'center',gap:8}}>
-                    <motion.div key={stepIndex} initial={{scale:0,opacity:0}} animate={{scale:1,opacity:1}}
-                                style={{width:20,height:20,borderRadius:'50%',
-                                    background:`linear-gradient(135deg,${T.roseDeep},${T.goldDark})`,
-                                    display:'flex',alignItems:'center',justifyContent:'center',
-                                    boxShadow:`0 2px 8px rgba(136,14,79,0.3)`}}>
-                        {React.createElement(STEPS[stepIndex].icon,{size:11,color:'white'})}
+
+                <div style={
+                    {
+                        display:'flex',
+                        alignItems:'center',
+                        gap:8
+                    }}>
+
+                    <motion.div
+                        key={stepIndex}
+                        initial={
+                        {
+                            scale:0,
+                            opacity:0
+                        }} animate={
+                        {
+                            scale:1,
+                            opacity:1
+                        }}
+                        style={
+                        {
+                            width:20,
+                            height:20,
+                            borderRadius:'50%',
+                            background:`linear-gradient(135deg,${T.roseDeep},${T.goldDark})`,
+                            display:'flex',
+                            alignItems:'center',
+                            justifyContent:'center',
+                            boxShadow:`0 2px 8px rgba(136,14,79,0.3)`
+                        }
+                    }
+                    >
+
+                        {
+                            React.createElement(STEPS[stepIndex].icon, {
+                                size:11,
+                                color:'white'
+                            }
+                            )
+                        }
+
                     </motion.div>
-                    <p style={{fontFamily:T.fontBody,fontSize:12,color:T.textSoft,margin:0,letterSpacing:'.05em'}}>
+                    <p
+                        style={
+                        {
+                            fontFamily:T.fontBody,
+                            fontSize:12,
+                            color:T.textSoft,
+                            margin:0,
+                            letterSpacing:'.05em'
+                        }
+                    }
+                    >
                         Étape <strong style={{color:T.roseDeep}}>{stepIndex+1}</strong> / {STEPS.length} — {STEPS[stepIndex]?.title}
                     </p>
                 </div>
@@ -290,31 +580,63 @@ function RewardOverlay({show, onComplete, stepIndex}) {
     ];
     const msg = messages[stepIndex] || {title:'Bravo !', sub:'Continue ainsi   ✦'};
 
+
     useEffect(()=>{
         if(!show||!overlayRef.current) return;
         const tl = gsap.timeline({onComplete});
+        // Phase 1 — overlay fade in// Phase 1 — overlay fade in
 
-        tl.fromTo(overlayRef.current, {opacity:0},{opacity:1,duration:.35,ease:'power2.out'});
+        tl.fromTo(
+            overlayRef.current, {opacity:0},{
+                opacity:1,
+                duration:.35,
+                ease:'power2.out'
+            }
+            );
+
 
         raysRef.current.forEach((r,i)=>{
             if(!r) return;
             gsap.fromTo(r,
-                {opacity:0,scale:.3,rotate:i*30},
-                {opacity:[0,.6,0],scale:[.3,1,.3],rotate:`+=${360+i*15}`,
-                    duration:1.6,delay:i*.04,ease:'power2.inOut'},
+                {
+                    opacity:0,
+                    scale:.3,
+                    rotate:i*30
+                },
+                {
+                    opacity:[0,.6,0],
+                    scale:[.3,1,.3],
+                    rotate:`+=${360+i*15}`,
+                    duration:1.6,
+                    delay:i*.04,
+                    ease:'power2.inOut'
+                },
             );
         });
 
+
+        // Phase 3 — orbit particles
         orbitRef.current.forEach((p,i)=>{
             if(!p) return;
             const angle = (i/orbitRef.current.length)*Math.PI*2;
             gsap.fromTo(p,
-                {x:0,y:0,opacity:0,scale:0},
-                {x:Math.cos(angle)*140, y:Math.sin(angle)*140,
-                    opacity:[0,1,0], scale:[0,1.3,0],
-                    duration:1.4, delay:i*.05, ease:'power2.out'},
+                {
+                    x:0,y:0,
+                    opacity:0,
+                    scale:0
+                },
+                {
+                    x:Math.cos(angle)*140,
+                    y:Math.sin(angle)*140,
+                    opacity:[0,1,0],
+                    scale:[0,1.3,0],
+                    duration:1.4,
+                    delay:i*.05,
+                    ease:'power2.out'
+                },
             );
         });
+        // Phase 4 — card bounce in
 
         tl.fromTo(cardRef.current,
             {y:60,opacity:0,scale:.75,rotateX:-25},
@@ -322,8 +644,15 @@ function RewardOverlay({show, onComplete, stepIndex}) {
             '-=1.1',
         );
 
+
+        // Phase 5 — hold + exit
         tl.to(overlayRef.current,
             {opacity:0,duration:.5,delay:1.2,ease:'power2.in'});
+        return () => {
+            tl.kill();
+            gsap.killTweensOf(raysRef.current);
+            gsap.killTweensOf(orbitRef.current);
+        };
 
     },[show, stepIndex]);
 
@@ -333,72 +662,172 @@ function RewardOverlay({show, onComplete, stepIndex}) {
     const ORBIT_COUNT = 12;
 
     return (
-        <div ref={overlayRef} style={{
-            position:'fixed',inset:0,zIndex:9999,
-            background:'rgba(26,8,18,.75)',backdropFilter:'blur(28px)',
-            display:'flex',alignItems:'center',justifyContent:'center',
-            perspective:'800px',
+        <div ref={overlayRef} style={
+            {
+                position:'fixed',
+                inset:0,
+                zIndex:9999,
+                background:'rgba(26,8,18,.75)',
+                backdropFilter:'blur(28px)',
+                display:'flex',
+                alignItems:'center',
+                justifyContent:'center',
+                perspective:'800px',
         }}>
             {Array.from({length:RAY_COUNT}).map((_,i)=>(
-                <div key={i} ref={el=>raysRef.current[i]=el} style={{
-                    position:'absolute',top:'50%',left:'50%',
-                    width:3, height:'40vmin',
-                    background:`linear-gradient(to bottom,${i%2===0?T.roseDeep:T.gold},transparent)`,
-                    transformOrigin:'0% 0%',
-                    transform:`translateX(-50%) rotate(${i*(360/RAY_COUNT)}deg)`,
-                    opacity:0,
+                <div key={i} ref={el=>raysRef.current[i]=el} style={
+                    {
+                        position:'absolute',
+                        top:'50%',
+                        left:'50%',
+                        width:3,
+                        height:'40vmin',
+                        background:`linear-gradient(to bottom,${i%2===0?T.roseDeep:T.gold},transparent)`,
+                        transformOrigin:'0% 0%',
+                        transform:`translateX(-50%) rotate(${i*(360/RAY_COUNT)}deg)`,
+                        opacity:0,
                 }}/>
             ))}
 
             {Array.from({length:ORBIT_COUNT}).map((_,i)=>(
                 <div key={i} ref={el=>orbitRef.current[i]=el} style={{
-                    position:'absolute',top:'50%',left:'50%',
-                    width: i%3===0?12:8, height: i%3===0?12:8,
+                    position:'absolute',
+                    top:'50%',left:'50%',
+                    width: i%3===0?12:8,
+                    height: i%3===0?12:8,
                     borderRadius:'50%',
                     background: i%3===0?T.roseDeep:i%3===1?T.gold:'rgba(255,255,255,.8)',
-                    marginTop:-5,marginLeft:-5,opacity:0,
+                    marginTop:-5,
+                    marginLeft:-5,
+                    opacity:0,
                     boxShadow:`0 0 12px ${i%2===0?T.roseDeep:T.gold}`,
                 }}/>
             ))}
 
             {[60,100,150,210,280].map((sz,i)=>(
-                <motion.div key={i} animate={{scale:[.3,2],opacity:[.8,0]}} transition={{duration:1.4,delay:i*.1,ease:'easeOut'}}
-                            style={{position:'absolute',width:sz,height:sz,borderRadius:'50%',
-                                border:`${i<2?2:1}px solid ${i%2?T.gold:T.roseDeep}`,
-                                top:'50%',left:'50%',transform:'translate(-50%,-50%)',
+                <motion.div key={i} animate={
+                    {
+                        scale:[.3,2],
+                        opacity:[.8,0]
+                    }} transition={
+                    {
+                        duration:1.4,
+                        delay:i*.1,
+                        ease:'easeOut'
+                    }
+                } style={
+                    {
+                        position:'absolute',
+                        width:sz,
+                        height:sz,
+                        borderRadius:'50%',
+                        border:`${i<2?2:1}px solid ${i%2?T.gold:T.roseDeep}`,
+                        top:'50%',left:'50%',transform:'translate(-50%,-50%)',
                             }}/>
             ))}
 
-            <div ref={cardRef} style={{
-                background:'rgba(255,255,255,.1)',backdropFilter:'blur(36px)',
-                border:'1px solid rgba(255,255,255,.22)',borderRadius:T.r32,
-                padding:'52px 72px',textAlign:'center',
-                boxShadow:`0 40px 120px rgba(136,14,79,.4), 0 0 80px rgba(212,175,55,.15)`,
-                position:'relative',zIndex:2,maxWidth:380,
+            <div ref={cardRef} style={
+                {
+                    background:'rgba(255,255,255,.1)',
+                    backdropFilter:'blur(36px)',
+                    border:'1px solid rgba(255,255,255,.22)',
+                    borderRadius:T.r32,
+                    padding:'52px 72px',
+                    textAlign:'center',
+                    boxShadow:`0 40px 120px rgba(136,14,79,.4), 0 0 80px rgba(212,175,55,.15)`,
+                    position:'relative',
+                    zIndex:2,
+                    maxWidth:380,
             }}>
-                <div style={{position:'absolute',inset:0,borderRadius:T.r32,
-                    background:'radial-gradient(circle at 50% 30%,rgba(136,14,79,.2),transparent 70%)',
-                    pointerEvents:'none'}}/>
-                <motion.div animate={{x:['200%','-200%']}} transition={{duration:2.5,repeat:Infinity,ease:'linear'}}
-                            style={{position:'absolute',inset:0,borderRadius:T.r32,
-                                background:'linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent)',
-                                pointerEvents:'none'}}/>
 
-                <motion.div animate={{rotate:[0,15,-15,0],scale:[1,1.2,1]}} transition={{duration:.7,delay:.2,ease:'backOut'}}
-                            style={{fontSize:56,marginBottom:20,display:'block',
-                                filter:`drop-shadow(0 0 20px ${T.roseDeep}) drop-shadow(0 0 40px ${T.gold})`}}>
+                <div style={
+                    {
+                        position:'absolute',
+                        inset:0,
+                        borderRadius:T.r32,
+                        background:'radial-gradient(circle at 50% 30%,rgba(136,14,79,.2),transparent 70%)',
+                        pointerEvents:'none'
+                    }
+                }
+                />
+
+                <motion.div animate={
+                    {
+                        x:['200%','-200%']
+                    }
+                } transition={
+                    {
+                        duration:2.5,
+                        repeat:Infinity,
+                        ease:'linear'
+                    }
+                } style={
+                    {
+                        position:'absolute',
+                        inset:0,
+                        borderRadius:T.r32,
+                        background:'linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent)',
+                        pointerEvents:'none'}}/>
+
+                <motion.div 
+                    animate={
+                    {
+                        rotate:[0,15,-15,0],
+                        scale:[1,1.2,1]
+                    }
+                } transition={
+                    {
+                        duration:.7,
+                        delay:.2,
+                        ease:'backOut'
+                    }
+                } style={
+                    {
+                        fontSize:56,
+                        marginBottom:20,
+                        display:'block',
+                        filter:`drop-shadow(0 0 20px ${T.roseDeep}) drop-shadow(0 0 40px ${T.gold})`
+                    }
+                }>
                     ✦
                 </motion.div>
 
-                <h2 style={{fontFamily:T.fontDisplay,fontSize:'clamp(28px,5vw,44px)',fontWeight:700,color:T.white,
-                    margin:`0 0 10px`,textShadow:`0 0 40px rgba(136,14,79,.8),0 0 80px rgba(136,14,79,.4)`}}>
+                <h2 
+                    style={
+                    {
+                        fontFamily:T.fontDisplay,
+                        fontSize:'clamp(28px,5vw,44px)',
+                        fontWeight:700,
+                        color:T.white,
+                        margin:`0 0 10px`,
+                        textShadow:`0 0 40px rgba(136,14,79,.8),0 0 80px rgba(136,14,79,.4)`
+                    }
+                }
+                >
                     {msg.title}
                 </h2>
-                <p style={{fontFamily:T.fontBody,fontSize:16,color:'rgba(255,255,255,.8)',margin:0,letterSpacing:'.04em'}}>
+                <p 
+                    style={
+
+                    {
+                        fontFamily:T.fontBody,
+                        fontSize:16,
+                        color:'rgba(255,255,255,.8)',
+                        margin:0,
+                        letterSpacing:'.04em'
+                    }
+                }
+                >
                     {msg.sub}
                 </p>
 
-                <motion.div animate={{scaleX:[0,1]}} transition={{duration:.9,delay:.35}}
+                <motion.div
+                    animate={
+                    {
+                        scaleX:[0,1]
+                    }
+
+                } transition={{duration:.9,delay:.35}}
                             style={{height:2,marginTop:28,borderRadius:99,transformOrigin:'left',
                                 background:`linear-gradient(90deg,transparent,${T.roseDeep},${T.gold},transparent)`}}/>
             </div>
@@ -431,11 +860,18 @@ function StepGenre({value, onChange}) {
                                        outlineOffset:sel?3:0,
                                        boxShadow:sel?`0 28px 72px ${opt.glow},0 0 0 1px rgba(255,255,255,.1) inset`:`0 8px 32px rgba(136,14,79,.05)`,
                                        display:'flex',flexDirection:'column',alignItems:'center',gap:16,
-                                       transition:'all .4s cubic-bezier(.34,1.56,.64,1)',position:'relative',overflow:'hidden'}}>
+                                       transition:'background .4s cubic-bezier(.34,1.56,.64,1), box-shadow .4s cubic-bezier(.34,1.56,.64,1)',position:'relative',overflow:'hidden'}}>
                         {sel&&(
-                            <motion.div animate={{x:['200%','-200%']}} transition={{duration:2,repeat:Infinity,ease:'linear'}}
-                                        style={{position:'absolute',inset:0,pointerEvents:'none',
-                                            background:'linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)'}}/>
+                            <motion.div
+                                animate={{x:['200%','-200%']}}
+                                transition={{duration:2, repeat:Infinity, ease:'linear'}}
+                                style={{
+                                    position:'absolute', top:0, left:0, right:0, bottom:0,
+                                    pointerEvents:'none',
+                                    background:'linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)',
+                                    opacity: sel ? 1 : 0,
+                                }}
+                            />
                         )}
                         {sel&&(
                             <motion.div animate={{scale:[1,1.3,1],opacity:[.5,.0,.5]}} transition={{duration:2,repeat:Infinity}}
@@ -470,6 +906,7 @@ function StepGenre({value, onChange}) {
 function StepBirthday({value, onChange}) {
     const age = useMemo(()=>calculateAge(value),[value]);
     const maxDate = new Date(Date.now()-MIN_AGE*365.25*86400000).toISOString().split('T')[0];
+    const minDate = new Date(Date.now()-MAX_AGE*365.25*86400000).toISOString().split('T')[0];
     return (
         <motion.div initial={{opacity:0,y:28}} animate={{opacity:1,y:0}} style={{maxWidth:420,margin:'0 auto'}}>
             <div style={{background:T.glass,backdropFilter:'blur(28px)',
@@ -489,19 +926,26 @@ function StepBirthday({value, onChange}) {
                         <p style={{fontFamily:T.fontDisplay,fontSize:18,fontWeight:600,color:T.text,margin:0}}>Quand es-tu né·e ?</p>
                     </div>
                 </div>
-                <input type="date" value={value} onChange={e=>onChange(e.target.value)} max={maxDate}
+                <input type="date" value={value} onChange={e=>onChange(e.target.value)} max={maxDate} min={minDate}
                        style={{width:'100%',padding:'16px 20px',border:`1.5px solid ${value?T.roseDeep:T.border}`,
                            borderRadius:T.r16,fontFamily:T.fontBody,fontSize:16,color:T.text,
                            background:'rgba(255,255,255,.9)',outline:'none',boxSizing:'border-box',
                            boxShadow:value?`0 0 0 3px rgba(136,14,79,.1)`:'none',
                            transition:'all .3s ease',cursor:'pointer'}}/>
-                <AnimatePresence>
-                    {age!==null&&age>=MIN_AGE&&(
-                        <motion.div initial={{opacity:0,y:14,scale:.88}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-12}}
-                                    style={{marginTop:20,background:`linear-gradient(135deg,${T.roseDeep},${T.goldDark})`,
-                                        borderRadius:T.r16,padding:'16px 24px',display:'flex',alignItems:'center',gap:12,
+                {/* ✅ REMPLACER les lignes 903 à 933 par : */}
+                {(() => {
+                    if (age === null) return null;
+                    if (age >= MIN_AGE && age <= MAX_AGE) return (
+                        <motion.div key="age-ok"
+                                    initial={{opacity:0,y:14,scale:.88}}
+                                    animate={{opacity:1,y:0,scale:1}}
+                                    exit={{opacity:0,y:-12}}
+                                    style={{marginTop:20,
+                                        background:`linear-gradient(135deg,${T.roseDeep},${T.goldDark})`,
+                                        borderRadius:T.r16,padding:'16px 24px',
+                                        display:'flex',alignItems:'center',gap:12,
                                         boxShadow:`0 8px 32px rgba(136,14,79,.2)`}}>
-                            <span style={{fontSize:32,filter:'drop-shadow(0 2px 8px rgba(0,0,0,.3))'}}>🎂</span>
+                            <span style={{fontSize:32}}>🎂</span>
                             <div>
                                 <p style={{fontFamily:T.fontBody,fontSize:12,color:'rgba(255,255,255,.7)',margin:0}}>Ton âge</p>
                                 <p style={{fontFamily:T.fontDisplay,fontSize:32,fontWeight:700,color:T.white,margin:0}}>{age} ans</p>
@@ -510,15 +954,19 @@ function StepBirthday({value, onChange}) {
                                 <Sparkles size={22} color="rgba(255,255,255,.65)"/>
                             </motion.div>
                         </motion.div>
-                    )}
-                    {age!==null&&age<MIN_AGE&&(
-                        <motion.p initial={{opacity:0}} animate={{opacity:1}}
-                                  style={{fontFamily:T.fontBody,fontSize:13,color:'#DC2626',marginTop:12,textAlign:'center',
-                                      background:'rgba(220,38,38,.08)',borderRadius:T.r12,padding:'12px 16px'}}>
-                            Tu dois avoir au moins {MIN_AGE} ans pour rejoindre LoveLine 💙
+                    );
+                    return (
+                        <motion.p key="age-error"
+                                  initial={{opacity:0}} animate={{opacity:1}}
+                                  style={{fontFamily:T.fontBody,fontSize:13,color:'#DC2626',marginTop:12,
+                                      textAlign:'center',background:'rgba(220,38,38,.08)',
+                                      borderRadius:T.r12,padding:'12px 16px'}}>
+                            {age < MIN_AGE
+                                ? `Tu dois avoir au moins ${MIN_AGE} ans pour rejoindre LoveLine 💙`
+                                : `LoveLine est réservé aux étudiant·e·s de moins de ${MAX_AGE} ans 💙`}
                         </motion.p>
-                    )}
-                </AnimatePresence>
+                    );
+                })()}
             </div>
         </motion.div>
     );
@@ -526,11 +974,22 @@ function StepBirthday({value, onChange}) {
 
 // NEW STEP: Academics
 function StepAcademics({value, onChange}) {
-    const facultes = ['FAST (Sciences)', 'FDSP (Droit)', 'FLESH (Lettres)', 'FSS (Santé)', 'FA (Agronomie)', 'ISMA', 'ENSI', 'Autre'];
+    const facultes = [
+        'FAST (Sciences & Tech)',
+        'FLESH (Lettres & Sciences Humaines)',
+        'FDSP (Droit & Économie)',
+        'FASEG (Economie & Gestion)',
+        'FSS (Médecine & Sciences de la Santé)',
+        'ISAPU (Enseignement)',
+        "ISMA (Metier de l'Agriculture)",
+        'PSE (Institut Formation Santé)',
+        'Autre',
+    ];
     const niveaux = ['Licence 1', 'Licence 2', 'Licence 3', 'Master 1', 'Master 2', 'Doctorat'];
 
     const handleFac = f => onChange({...value, faculte: f});
     const handleNiv = n => onChange({...value, niveau: n});
+    const isAutre = value.faculte === 'Autre';
 
     return (
         <motion.div initial={{opacity:0,y:28}} animate={{opacity:1,y:0}} style={{maxWidth:600,margin:'0 auto'}}>
@@ -567,7 +1026,22 @@ function StepAcademics({value, onChange}) {
                         })}
                     </div>
                 </div>
-
+                {isAutre && (
+                    <motion.div initial={{opacity:0,height:0}} animate={{opacity:1}} style={{marginTop:12, overflow:'hidden'}}>
+                        <input
+                            type="text"
+                            placeholder="Précise ta faculté ou institut…"
+                            value={value.faculteCustom || ''}
+                            onChange={e => onChange({...value, faculteCustom: e.target.value})}
+                            style={{
+                                width:'100%', padding:'12px 16px', borderRadius:T.r16,
+                                border:`1.5px solid ${T.roseDeep}`, background:'rgba(255,255,255,.9)',
+                                fontFamily:T.fontBody, fontSize:13, color:T.text, outline:'none',
+                                boxSizing:'border-box', boxShadow:`0 0 0 3px rgba(136,14,79,.08)`,
+                            }}
+                        />
+                    </motion.div>
+                )}
                 {/* Niveau Selection */}
                 <div>
                     <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
@@ -627,10 +1101,12 @@ function StepInterests({value, onChange}) {
                         <motion.div animate={{width:`${pct}%`}} transition={{duration:.4}}
                                     style={{height:'100%',borderRadius:99,background:`linear-gradient(90deg,${T.roseDeep},${T.gold})`}}/>
                     </div>
-                    <motion.span animate={{color:value.length>=MIN_INTERESTS?T.roseDeep:T.textSoft}}
-                                 style={{fontFamily:T.fontBody,fontSize:12,fontWeight:700}}>
-                        {value.length} / {MAX_INTERESTS}
-                    </motion.span>
+                    <span style={{
+                        color: value.length >= MIN_INTERESTS ? T.roseDeep : T.textSoft,
+                        transition: 'color .3s ease',
+                        fontFamily: T.fontBody, fontSize: 12}}>
+                        {value.length} / {MAX_INTERESTS} passions
+                    </span>
                 </div>
             </div>
 
@@ -651,7 +1127,7 @@ function StepInterests({value, onChange}) {
                                            backdropFilter:'blur(12px)',cursor:'pointer',
                                            display:'flex',alignItems:'center',gap:8,
                                            boxShadow:sel?`0 8px 24px ${item.c}33,0 0 0 1px ${item.c}22`:T.shadow.replace('0.08)','0.03)'),
-                                           transition:'all .3s ease',position:'relative',overflow:'hidden'}}>
+                                           transition:'background .3s ease, box-shadow .3s ease',position:'relative',overflow:'hidden'}}>
                             {sel&&(
                                 <motion.div initial={{scale:0,opacity:0}} animate={{scale:1,opacity:1}} transition={{type:'spring',stiffness:350}}
                                             style={{position:'absolute',top:6,right:6,width:18,height:18,borderRadius:'50%',
@@ -680,19 +1156,23 @@ function StepInterests({value, onChange}) {
 }
 
 function StepBio({value, onChange}) {
-    const words = useMemo(()=>countWords(value),[value]);
-    const pct   = Math.min((words/MAX_BIO_WORDS)*100,100);
-    const circ  = 2*Math.PI*22;
-    const isOver = words>MAX_BIO_WORDS;
+    const words   = useMemo(()=>countWords(value),[value]);
+    const pct     = Math.min((words/MAX_BIO_WORDS)*100,100);
+    const circ    = 2*Math.PI*22;
+    const isOver  = words>MAX_BIO_WORDS;
     const ringColor = isOver?'#DC2626':pct>80?'#D97706':T.roseDeep;
     const [focused, setFocused] = useState(false);
 
     return (
         <motion.div initial={{opacity:0,y:28}} animate={{opacity:1,y:0}} style={{maxWidth:540,margin:'0 auto'}}>
-            <div style={{background:T.glass,backdropFilter:'blur(28px)',
-                border:`1.5px solid ${isOver?'#DC2626':focused?T.roseDeep:T.border}`,borderRadius:T.r24,
-                padding:'36px 32px',boxShadow:focused?`${T.shadow},0 0 0 3px rgba(136,14,79,.1)`:T.shadow,
-                transition:'all .3s ease',position:'relative',overflow:'hidden'}}>
+            <div style={{
+                background:T.glass, backdropFilter:'blur(28px)',
+                border:`1.5px solid ${isOver?'#DC2626':focused?T.roseDeep:T.border}`,
+                borderRadius:T.r24, padding:'36px 32px',
+                boxShadow:focused?`${T.shadow},0 0 0 3px rgba(136,14,79,.1)`:T.shadow,
+                transition:'border-color .3s ease, box-shadow .3s ease',
+                position:'relative', overflow:'hidden'
+            }}>
                 <div style={{position:'absolute',top:0,left:0,right:0,height:3,
                     background:`linear-gradient(90deg,${T.roseDeep},${T.gold})`,
                     borderRadius:`${T.r24} ${T.r24} 0 0`}}/>
@@ -702,45 +1182,65 @@ function StepBio({value, onChange}) {
                         <p style={{fontFamily:T.fontDisplay,fontSize:20,fontWeight:600,color:T.text,margin:0}}>Ta bio</p>
                         <p style={{fontFamily:T.fontBody,fontSize:13,color:T.textSoft,margin:'4px 0 0'}}>Dis quelque chose d'unique sur toi</p>
                     </div>
+
+                    {/* ✅ SVG — motion.circle remplacé par circle avec style transition */}
                     <div style={{position:'relative',width:60,height:60}}>
                         <svg width={60} height={60} style={{transform:'rotate(-90deg)'}}>
-                            <circle cx={30} cy={30} r={22} fill="none" stroke="rgba(136,14,79,.08)" strokeWidth={3.5}/>
-                            <motion.circle cx={30} cy={30} r={22} fill="none" stroke={ringColor} strokeWidth={3.5}
-                                           strokeLinecap="round" strokeDasharray={circ}
-                                           animate={{strokeDashoffset:circ-(pct/100)*circ}} transition={{duration:.3}}/>
+                            <circle cx={30} cy={30} r={22} fill="none"
+                                    stroke="rgba(136,14,79,.08)" strokeWidth={3.5}/>
+                            <circle cx={30} cy={30} r={22} fill="none"
+                                    stroke={ringColor} strokeWidth={3.5}
+                                    strokeLinecap="round"
+                                    strokeDasharray={circ}
+                                    strokeDashoffset={circ-(pct/100)*circ}
+                                    style={{transition:'stroke-dashoffset .3s ease, stroke .3s ease'}}/>
                         </svg>
-                        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <span style={{fontFamily:T.fontBody,fontSize:11,fontWeight:700,
-                  color:isOver?'#DC2626':T.textSoft}}>
-                {MAX_BIO_WORDS-words}
-              </span>
+                        <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,
+                            display:'flex',alignItems:'center',justifyContent:'center'}}>
+                            <span style={{fontFamily:T.fontBody,fontSize:11,fontWeight:700,
+                                color:isOver?'#DC2626':T.textSoft,
+                                transition:'color .3s ease'}}>
+                                {MAX_BIO_WORDS-words}
+                            </span>
                         </div>
                     </div>
                 </div>
 
                 <textarea value={value} onChange={e=>onChange(e.target.value)} rows={6}
                           onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
-                          placeholder="Ex : Étudiant en Droit à l'UK, passionné de musique et de voyages. Je cherche quelqu'un avec qui partager des discussions profondes et des éclats de rire sincères…"
+                          placeholder="Ex : Étudiant en Droit à l'UK, passionné de musique et de voyages…"
                           style={{width:'100%',boxSizing:'border-box',padding:'16px 20px',
-                              border:`1.5px solid ${isOver?'#DC2626':focused?T.roseDeep:'rgba(136,14,79,.15)'}`,borderRadius:T.r16,
-                              fontFamily:T.fontBody,fontSize:14,color:T.text,
-                              background:'rgba(255,255,255,.9)',resize:'vertical',outline:'none',lineHeight:1.75,
+                              border:`1.5px solid ${isOver?'#DC2626':focused?T.roseDeep:'rgba(136,14,79,.15)'}`,
+                              borderRadius:T.r16, fontFamily:T.fontBody, fontSize:14, color:T.text,
+                              background:'rgba(255,255,255,.9)',resize:'vertical',outline:'none',
+                              lineHeight:1.75,
                               boxShadow:focused?`0 0 0 3px rgba(136,14,79,.08)`:'none',
-                              transition:'all .3s ease',minHeight:140}}/>
+                              transition:'border-color .3s ease, box-shadow .3s ease',
+                              minHeight:140}}/>
 
                 <div style={{marginTop:12}}>
+                    {/* ✅ motion.div remplacé par div avec transition CSS */}
                     <div style={{height:4,borderRadius:99,background:'rgba(136,14,79,.08)',overflow:'hidden'}}>
-                        <motion.div animate={{width:`${pct}%`}} transition={{duration:.3}}
-                                    style={{height:'100%',borderRadius:99,background:isOver?'#DC2626':pct>80?'#D97706':`linear-gradient(90deg,${T.roseDeep},${T.gold})`}}/>
+                        <div style={{
+                            height:'100%', borderRadius:99,
+                            width:`${pct}%`,
+                            background:isOver?'#DC2626':pct>80?'#D97706':`linear-gradient(90deg,${T.roseDeep},${T.gold})`,
+                            transition:'width .3s ease, background .3s ease'
+                        }}/>
                     </div>
                     <div style={{display:'flex',justifyContent:'space-between',marginTop:6}}>
-            <span style={{fontFamily:T.fontBody,fontSize:12,color:T.textSoft}}>
-              {words} mot{words!==1?'s':''}
-            </span>
-                        <motion.span animate={{color:isOver?'#DC2626':T.textSoft}}
-                                     style={{fontFamily:T.fontBody,fontSize:12}}>
+                        {/* ✅ span normal */}
+                        <span style={{fontFamily:T.fontBody,fontSize:12,color:T.textSoft}}>
+                            {words} mot{words!==1?'s':''}
+                        </span>
+                        {/* ✅ motion.span remplacé par span avec transition CSS */}
+                        <span style={{
+                            fontFamily:T.fontBody, fontSize:12,
+                            color:isOver?'#DC2626':T.textSoft,
+                            transition:'color .3s ease'
+                        }}>
                             max {MAX_BIO_WORDS} mots
-                        </motion.span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -753,7 +1253,8 @@ function StepBio({value, onChange}) {
                                        onClick={()=>onChange(value+(value?' ':'')+pr+'…')}
                                        style={{fontFamily:T.fontBody,fontSize:11,color:T.roseDeep,
                                            background:'rgba(136,14,79,.05)',border:`1px solid rgba(136,14,79,.15)`,
-                                           borderRadius:T.r48,padding:'6px 14px',cursor:'pointer',transition:'all .2s ease'}}>
+                                           borderRadius:T.r48,padding:'6px 14px',cursor:'pointer',
+                                           transition:'all .2s ease'}}>
                             + {pr}
                         </motion.button>
                     ))}
@@ -771,7 +1272,7 @@ function StepPhoto({value, onChange}) {
 
     const handleFile = useCallback(f=>{
         if(!f||!f.type.startsWith('image/')) { toast.error('Choisis une image valide.'); return; }
-        if(f.size>5*1024*1024) { toast.error('Image trop grande (max 5MB).'); return; }
+        if(f.size>10*1024*1024) { toast.error('Image trop grande (max 10MB).'); return; }
         const r = new FileReader();
         r.onload = e => setRawImg(e.target.result);
         r.readAsDataURL(f);
@@ -990,7 +1491,7 @@ function ProfileCard({profile}) {
                                 <div style={{display:'flex',alignItems:'baseline',gap:10}}>
                                     <h3 style={{fontFamily:T.fontDisplay,fontSize:28,fontWeight:700,color:T.white,margin:0,
                                         textShadow:'0 2px 12px rgba(0,0,0,.5)'}}>
-                                        {profile.genre==='homme'?'Étudiant':'Étudiante'}
+                                        {profile.firstName || (profile.genre==='homme'?'Étudiant':'Étudiante')}
                                     </h3>
                                     {age&&<span style={{fontFamily:T.fontBody,fontSize:24,fontWeight:300,color:'rgba(255,255,255,.75)'}}>{age}</span>}
                                 </div>
@@ -1111,7 +1612,7 @@ function PreviewStep({profile}) {
         <div>
             <div style={{display:'flex',gap:32,flexWrap:'wrap',justifyContent:'center',alignItems:'flex-start'}}>
                 <motion.div initial={{opacity:0,x:-44}} animate={{opacity:1,x:0}} transition={{delay:.1,type:'spring',stiffness:130,damping:18}}>
-                    <ProfileCard profile={profile}/>
+                    <ProfileCard profile={{...profile, firstName: localStorage.getItem('user_firstname') || ''}}/>
                 </motion.div>
 
                 <motion.div initial={{opacity:0,x:44}} animate={{opacity:1,x:0}} transition={{delay:.2,type:'spring',stiffness:130,damping:18}}
@@ -1198,142 +1699,277 @@ function PreviewStep({profile}) {
     );
 }
 
-function SubscriptionModal({show, onClose, onDashboard}) {
-    const modalRef = useRef(null);
-    useEffect(()=>{
-        if(!show||!modalRef.current) return;
-        gsap.fromTo(modalRef.current,
-            {y:80,opacity:0,scale:.9},
-            {y:0,opacity:1,scale:1,duration:.55,ease:'back.out(1.5)'},
-        );
-    },[show]);
+function SubscriptionModal({show,onClose, onDashboard}) {
+    const [selected, setSelected]   = useState(1);
+    const [slideIdx, setSlideIdx]   = useState(0);
 
-    if(!show) return null;
+    const SLIDES = [
+        {
+            plan: 0,
+            items: [
+                { icon: Heart,    title:'5 swipes par jour',        sub:'Explore les profils du campus' },
+                { icon: Eye,      title:'Voir les profils',         sub:'Découvre qui est près de toi' },
+                { icon: Globe,    title:'Événements publics',       sub:'Rejoins la communauté UK' },
+            ]
+        },
+        {
+            plan: 1,
+            items: [
+                { icon: Heart,    title:'Swipes illimités',         sub:'Rencontre sans aucune limite' },
+                { icon: Eye,      title:'Voir qui t\'a liké',       sub:'Découvre qui s\'intéresse à toi' },
+                { icon: Star,     title:'Profil mis en avant',      sub:'Sois vu en premier sur le campus' },
+                { icon: Sparkles, title:'1 Boost par semaine',      sub:'Multiplie ta visibilité instantanément' },
+            ]
+        },
+        {
+            plan: 2,
+            items: [
+                { icon: Award,    title:'Badge VIP vérifié',        sub:'Profil exclusif et prioritaire' },
+                { icon: Shield,   title:'Matching personnalisé',    sub:'L\'IA trouve ta moitié idéale' },
+                { icon: Mic,      title:'Messagerie vocale',        sub:'Parle avant de te rencontrer' },
+                { icon: Sparkles, title:'Boosts illimités',         sub:'Toujours en tête de liste' },
+            ]
+        },
+    ];
+
+    const currentSlides = SLIDES[selected].items;
+
+    useEffect(() => {
+        setSlideIdx(0);
+    }, [selected]);
+
+    useEffect(() => {
+        if (!show) return;
+        const t = setInterval(() =>
+            setSlideIdx(i => (i + 1) % currentSlides.length), 2800);
+        return () => clearInterval(t);
+    }, [show, selected, currentSlides.length]);
+
+    if (!show) return null;
+
+    const plan = PLAN_LIST[selected];
+    const GRAD = [
+        `linear-gradient(135deg,#6B7280,#374151)`,
+        `linear-gradient(135deg,${T.roseDeep},${T.accent})`,
+        `linear-gradient(135deg,${T.goldDark},${T.gold})`,
+    ];
+
     return (
         <AnimatePresence>
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
-                        style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(26,8,18,.85)',
-                            backdropFilter:'blur(28px)',display:'flex',alignItems:'center',justifyContent:'center',
-                            padding:24,overflowY:'auto'}}
-                        onClick={e=>e.target===e.currentTarget&&onClose()}>
-                <div ref={modalRef} style={{background:'rgba(253,246,240,.97)',backdropFilter:'blur(40px)',
-                    borderRadius:T.r32,padding:'52px 44px',maxWidth:980,width:'100%',
-                    position:'relative',boxShadow:'0 40px 120px rgba(26,8,18,.4)',
-                    border:`1px solid rgba(136,14,79,.1)`}}>
+            <motion.div key="sub-modal"
+                        initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+                style={{
+                    position:'fixed', inset:0, zIndex:9999,
+                    background:'rgba(8,2,6,.94)',
+                    backdropFilter:'blur(28px)',
+                    display:'flex', alignItems:'flex-end', justifyContent:'center',
+                }}
+            >
+                <motion.div
+                    initial={{y:'100%'}} animate={{y:0}} exit={{y:'100%'}}
+                    transition={{type:'spring', stiffness:300, damping:32}}
+                    style={{
+                        width:'100%', maxWidth:440,
+                        background:T.cream,
+                        borderRadius:`32px 32px 0 0`,
+                        overflow:'hidden',
+                        boxShadow:'0 -32px 100px rgba(8,2,6,.6)',
+                    }}
+                >
+                    {/* ── Barre top gradient animée ── */}
+                    <div style={{
+                        height:3,
+                        background:GRAD[selected],
+                        backgroundSize:'200%',
+                        transition:'background .5s ease',
+                    }}/>
 
-                    <motion.button whileHover={{scale:1.1,rotate:90}} whileTap={{scale:.9}}
-                                   onClick={onClose}
-                                   style={{position:'absolute',top:20,right:20,background:'rgba(136,14,79,.08)',
-                                       border:`1px solid rgba(136,14,79,.15)`,borderRadius:'50%',width:38,height:38,
-                                       display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-                        <X size={16} color={T.roseDeep}/>
-                    </motion.button>
-
-                    <div style={{textAlign:'center',marginBottom:44}}>
-                        <motion.div animate={{scale:[1,1.1,1],rotate:[0,4,-4,0]}} transition={{duration:3,repeat:Infinity}}
-                                    style={{fontSize:40,marginBottom:14,filter:`drop-shadow(0 0 20px ${T.roseDeep})`}}>✦</motion.div>
-                        <h2 style={{fontFamily:T.fontDisplay,fontSize:'clamp(24px,4vw,36px)',fontWeight:700,color:T.text,margin:'0 0 10px'}}>
-                            Débloque ton potentiel amoureux
-                        </h2>
-                        <p style={{fontFamily:T.fontBody,fontSize:14,color:T.textSoft,margin:0,maxWidth:440,marginInline:'auto',lineHeight:1.7}}>
-                            Ton profil est prêt. Choisis un plan pour rencontrer des étudiant·e·s de l'Université de Kara.
-                        </p>
+                    {/* ── Trait drag + bouton passer ── */}
+                    <div style={{display:'flex', alignItems:'center',
+                        justifyContent:'space-between', padding:'14px 20px 0'}}>
+                        <div style={{width:36, height:4, borderRadius:99,
+                            background:'rgba(136,14,79,.12)', margin:'0 auto'}}/>
                     </div>
 
-                    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:20,marginBottom:36}}>
-                        {PLAN_LIST.map((plan,i)=>{
-                            const HL = plan.highlight;
-                            const GD = plan.gold;
+                    {/* ── CAROUSEL ── */}
+                    <div style={{padding:'24px 24px 0', textAlign:'center', minHeight:200}}>
+
+                        {/* Icône centrale du slide */}
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={`icon-${selected}-${slideIdx}`}
+                                initial={{opacity:0, scale:.7, y:16}}
+                                animate={{opacity:1, scale:1, y:0}}
+                                exit={{opacity:0, scale:.8, y:-12}}
+                                transition={{duration:.36, ease:'backOut'}}
+                                style={{
+                                    width:84, height:84, borderRadius:'50%',
+                                    background:GRAD[selected],
+                                    display:'flex', alignItems:'center', justifyContent:'center',
+                                    margin:'0 auto 20px',
+                                    boxShadow:`0 16px 48px rgba(136,14,79,.3)`,
+                                }}
+                            >
+                                {React.createElement(currentSlides[slideIdx].icon, {
+                                    size:38, color:'white', strokeWidth:1.8
+                                })}
+                            </motion.div>
+                        </AnimatePresence>
+
+                        {/* Titre + sous-titre du slide */}
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={`text-${selected}-${slideIdx}`}
+                                initial={{opacity:0, y:14}}
+                                animate={{opacity:1, y:0}}
+                                exit={{opacity:0, y:-10}}
+                                transition={{duration:.3}}
+                            >
+                                <h3 style={{fontFamily:T.fontDisplay, fontSize:20, fontWeight:700,
+                                    color:T.text, margin:'0 0 8px'}}>
+                                    {currentSlides[slideIdx].title}
+                                </h3>
+                                <p style={{fontFamily:T.fontBody, fontSize:13, color:T.textSoft,
+                                    margin:0, lineHeight:1.65}}>
+                                    {currentSlides[slideIdx].sub}
+                                </p>
+                            </motion.div>
+                        </AnimatePresence>
+
+                        {/* Dots */}
+                        <div style={{display:'flex', justifyContent:'center', gap:6, margin:'18px 0 0'}}>
+                            {currentSlides.map((_, i) => (
+                                <motion.div
+                                    key={i}
+                                    onClick={() => setSlideIdx(i)}
+                                    animate={{
+                                        width: i === slideIdx ? 20 : 6,
+                                        background: i === slideIdx
+                                            ? (selected===1 ? T.roseDeep : selected===2 ? T.goldDark : '#6B7280')
+                                            : 'rgba(136,14,79,.15)',
+                                    }}
+                                    transition={{duration:.3}}
+                                    style={{height:6, borderRadius:99, cursor:'pointer'}}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Plans ── */}
+                    <div style={{display:'flex', gap:10, padding:'28px 20px 20px'}}>
+                        {PLAN_LIST.map((p, i) => {
+                            const active = selected === i;
+                            const color  = i===1 ? T.roseDeep : i===2 ? T.goldDark : '#6B7280';
                             return (
-                                <motion.div key={plan.name} initial={{opacity:0,y:36}} animate={{opacity:1,y:0}}
-                                            transition={{delay:i*.12,type:'spring'}} whileHover={{y:HL?0:-6}}
-                                            style={{borderRadius:T.r24,padding:'32px 24px',position:'relative',overflow:'hidden',
-                                                transform:HL?'scale(1.04)':'scale(1)',
-                                                background:HL?`linear-gradient(135deg,${T.roseDeep},${T.goldDark})`
-                                                    :GD?'rgba(253,246,240,.9)':'rgba(255,255,255,.9)',
-                                                border:HL?'1px solid rgba(255,255,255,.22)'
-                                                    :GD?`1px solid rgba(212,175,55,.3)`:`1px solid rgba(136,14,79,.1)`,
-                                                boxShadow:HL?`0 28px 72px rgba(136,14,79,.3)`:GD?`0 12px 44px rgba(212,175,55,.14)`:`0 8px 36px rgba(136,14,79,.05)`,
-                                            }}>
-                                    {HL&&<motion.div animate={{x:['200%','-200%']}} transition={{duration:2.5,repeat:Infinity,ease:'linear'}}
-                                                     style={{position:'absolute',inset:0,background:'linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent)'}}/>}
-                                    {plan.badge&&(
-                                        <div style={{display:'inline-flex',background:HL?'rgba(255,255,255,.2)':GD?`rgba(212,175,55,.15)`:`rgba(136,14,79,.08)`,
-                                            backdropFilter:'blur(8px)',border:HL?'1px solid rgba(255,255,255,.3)':GD?`1px solid rgba(212,175,55,.3)`:`1px solid rgba(136,14,79,.2)`,
-                                            borderRadius:T.r48,padding:'4px 14px',marginBottom:18,
-                                            fontFamily:T.fontBody,fontSize:11,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',
-                                            color:HL?'rgba(255,255,255,.9)':GD?T.goldDark:T.roseDeep}}>
-                                            ✦ {plan.badge}
+                                <motion.button
+                                    key={p.name}
+                                    onClick={() => setSelected(i)}
+                                    whileTap={{scale:.95}}
+                                    style={{
+                                        flex: active ? 1.4 : 1,
+                                        padding:'14px 8px',
+                                        borderRadius:18,
+                                        border: active ? `2.5px solid ${color}` : `1.5px solid rgba(0,0,0,.08)`,
+                                        background: active ? `${color}0F` : 'rgba(255,255,255,.8)',
+                                        cursor:'pointer',
+                                        position:'relative',
+                                        transition:'all .3s ease',
+                                        outline:'none',
+                                    }}
+                                >
+                                    {p.badge && active && (
+                                        <div style={{
+                                            position:'absolute', top:-11, left:'50%',
+                                            transform:'translateX(-50%)',
+                                            background: GRAD[i],
+                                            borderRadius:99, padding:'2px 10px',
+                                            fontFamily:T.fontBody, fontSize:9, fontWeight:800,
+                                            letterSpacing:'.08em', textTransform:'uppercase',
+                                            color:'white', whiteSpace:'nowrap',
+                                        }}>
+                                            {p.badge}
                                         </div>
                                     )}
-                                    <div style={{marginBottom:8}}>
-                    <span style={{fontFamily:T.fontDisplay,fontSize:24,fontWeight:600,
-                        color:HL?T.white:GD?T.goldDark:T.text}}>{plan.name}</span>
-                                        <span style={{marginLeft:10,fontFamily:T.fontBody,fontSize:11,fontWeight:400,
-                                            textTransform:'uppercase',letterSpacing:'.1em',
-                                            color:HL?'rgba(255,255,255,.6)':T.roseDeep}}>{plan.nameEn}</span>
+                                    <div style={{fontFamily:T.fontDisplay, fontSize:13, fontWeight:700,
+                                        color: active ? color : T.textSoft, marginBottom:4}}>
+                                        {p.name}
                                     </div>
-                                    <p style={{fontFamily:T.fontBody,fontSize:12,lineHeight:1.65,margin:`0 0 20px`,
-                                        color:HL?'rgba(255,255,255,.8)':T.textSoft}}>{plan.desc}</p>
-                                    <div style={{marginBottom:24}}>
-                    <span style={{fontFamily:T.fontDisplay,fontSize:plan.price===0?34:40,fontWeight:300,lineHeight:1,
-                        color:HL?T.white:GD?T.goldDark:T.text}}>
-                      {plan.price===0?'Gratuit':`${plan.price.toLocaleString('fr-FR')} F`}
-                    </span>
-                                        {plan.price>0&&<span style={{fontFamily:T.fontBody,fontSize:11,marginLeft:8,
-                                            color:HL?'rgba(255,255,255,.6)':T.textSoft}}>CFA {plan.period}</span>}
+                                    <div style={{fontFamily:T.fontDisplay,
+                                        fontSize: active ? 17 : 14, fontWeight:700,
+                                        color: active ? color : T.textMid}}>
+                                        {p.price === 0 ? 'Gratuit' : `${p.price.toLocaleString('fr-FR')} F`}
                                     </div>
-                                    <div style={{height:1,background:HL?'rgba(255,255,255,.15)':GD?'rgba(212,175,55,.2)':'rgba(136,14,79,.08)',marginBottom:20}}/>
-                                    <ul style={{listStyle:'none',padding:0,margin:`0 0 24px`,display:'flex',flexDirection:'column',gap:10}}>
-                                        {plan.features.map(f=>(
-                                            <li key={f} style={{display:'flex',alignItems:'flex-start',gap:10}}>
-                                                <div style={{width:17,height:17,borderRadius:'50%',flexShrink:0,marginTop:1,
-                                                    background:HL?'rgba(255,255,255,.2)':GD?'rgba(212,175,55,.15)':'rgba(136,14,79,.1)',
-                                                    display:'flex',alignItems:'center',justifyContent:'center'}}>
-                                                    <Check size={9} color={HL?T.white:GD?T.goldDark:T.roseDeep} strokeWidth={2.5}/>
-                                                </div>
-                                                <span style={{fontFamily:T.fontBody,fontSize:12,lineHeight:1.5,fontWeight:400,
-                                                    color:HL?'rgba(255,255,255,.9)':T.textMid}}>{f}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <motion.button whileHover={{scale:1.03,y:-2}} whileTap={{scale:.97}}
-                                                   onClick={()=>{
-                                                       toast.success(`Plan ${plan.name} activé !`,{style:{background:T.dark,color:T.white,fontFamily:T.fontBody,border:`1px solid ${T.roseDeep}`,borderRadius:T.r12}});
-                                                       setTimeout(onDashboard,1300);
-                                                   }}
-                                                   style={{width:'100%',padding:'13px 20px',borderRadius:T.r48,cursor:'pointer',
-                                                       fontFamily:T.fontBody,fontSize:12,fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',border:'none',
-                                                       ...(HL?{background:T.white,color:T.roseDeep,boxShadow:`0 8px 24px rgba(0,0,0,.15)`}
-                                                           :GD?{background:`linear-gradient(135deg,${T.gold},${T.goldDark})`,color:T.white,boxShadow:`0 8px 24px rgba(212,175,55,.3)`}
-                                                               :{background:'transparent',color:T.roseDeep,border:`1.5px solid rgba(136,14,79,.3)`})}}>
-                                        {plan.cta} →
-                                    </motion.button>
-                                </motion.div>
+                                    {p.price > 0 && (
+                                        <div style={{fontFamily:T.fontBody, fontSize:10,
+                                            color: active ? color : T.textGhost}}>
+                                            / mois
+                                        </div>
+                                    )}
+                                </motion.button>
                             );
                         })}
                     </div>
 
-                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16, marginTop:10}}>
-                        {/* New Explicit Dashboard Skip Button */}
-                        <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={onDashboard}
-                                       style={{width:'100%', maxWidth: 400, padding:'16px', borderRadius:T.r24, border:`2px solid ${T.roseDeep}`,
-                                           color:T.roseDeep, fontFamily:T.fontBody, fontSize:15, fontWeight:600,
-                                           textAlign:'center', cursor:'pointer', background:'transparent',
-                                           boxShadow:`0 8px 24px rgba(136,14,79,.05)`}}>
-                            Passer cette étape et aller au Dashboard →
+                    {/* ── CONTINUER ── */}
+                    <div style={{padding:'0 20px 14px'}}>
+                        <motion.button
+                            whileHover={{scale:1.02}} whileTap={{scale:.97}}
+                            onClick={() => {
+                                toast.success(`Plan ${plan.name} activé !`, {
+                                    style:{background:T.dark, color:T.white,
+                                        fontFamily:T.fontBody,
+                                        border:`1px solid ${T.roseDeep}`,
+                                        borderRadius:T.r12}
+                                });
+                                setTimeout(onDashboard, 1200);
+                            }}
+                            style={{
+                                width:'100%', padding:'17px',
+                                borderRadius:99, border:'none', cursor:'pointer',
+                                fontFamily:T.fontBody, fontSize:15, fontWeight:700,
+                                letterSpacing:'.07em', textTransform:'uppercase',
+                                color:'white',
+                                background: GRAD[selected],
+                                boxShadow:`0 14px 44px rgba(136,14,79,.32)`,
+                                position:'relative', overflow:'hidden',
+                                transition:'background .4s ease',
+                            }}
+                        >
+                            <motion.div
+                                animate={{x:['200%','-200%']}}
+                                transition={{duration:2.5, repeat:Infinity, ease:'linear'}}
+                                style={{position:'absolute', inset:0, pointerEvents:'none',
+                                    background:'linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)'}}
+                            />
+                            Continuer
                         </motion.button>
+                    </div>
 
-                        <p style={{fontFamily:T.fontBody,fontSize:11,color:T.textSoft,margin:0,opacity:.6}}>
-                            T-money · Flooz · Bitcoin · Carte bancaire · Sans engagement
+                    {/* ── NON MERCI ── */}
+                    <div style={{textAlign:'center', paddingBottom:28}}>
+                        <motion.button
+                            whileHover={{scale:1.04}}
+                            whileTap={{scale:.96}}
+                            onClick={onDashboard}
+                            style={{
+                                background:'none', border:'none', cursor:'pointer',
+                                fontFamily:T.fontBody, fontSize:14, fontWeight:700,
+                                color:T.textMid, letterSpacing:'.1em',
+                                textTransform:'uppercase', padding:'10px 32px',
+                            }}
+                        >
+                            Non merci
+                        </motion.button>
+                        <p style={{fontFamily:T.fontBody, fontSize:10,
+                            color:T.textGhost, margin:'6px 0 0', lineHeight:1.6}}>
+                            Sans engagement · T-money · Flooz · Carte bancaire
                         </p>
                     </div>
-                </div>
+                </motion.div>
             </motion.div>
         </AnimatePresence>
     );
 }
-
 // PART 8 — FinalWelcome
 
 function FinalWelcome({profile, onProceed}) {
@@ -1344,6 +1980,8 @@ function FinalWelcome({profile, onProceed}) {
     const statsRef     = useRef([]);
 
     useEffect(()=>{
+        // 1. Continuous confetti sides
+
         const endTime = Date.now() + 4800;
         const burst = ()=>{
             confetti({particleCount:8,angle:60,spread:58,origin:{x:0},
@@ -1354,11 +1992,14 @@ function FinalWelcome({profile, onProceed}) {
         };
         burst();
 
+        // 2. Center explosion
+
         setTimeout(()=>{
             confetti({particleCount:120,spread:100,origin:{y:.55},
                 colors:['#880E4F','#D4AF37','#E6E6FA'],decay:.9,scalar:1.2});
         },400);
 
+        // 3. Photo ring reveal
         if(photoRef.current) {
             gsap.fromTo(photoRef.current,
                 {scale:0,opacity:0,rotate:-20},
@@ -1366,11 +2007,15 @@ function FinalWelcome({profile, onProceed}) {
             );
         }
 
+        // 4. Spinning concentric rings
+
         ringsRef.current.forEach((r,i)=>{
             if(!r) return;
             gsap.to(r,{rotate:i%2===0?360:-360,duration:20+i*8,repeat:-1,ease:'none'});
             gsap.fromTo(r,{opacity:0,scale:.4},{opacity:1,scale:1,duration:.8,delay:.2+i*.15,ease:'back.out(1.5)'});
         });
+
+        // 5. Title character animation
 
         if(titleRef.current) {
             const chars = titleRef.current.querySelectorAll('.fc');
@@ -1380,6 +2025,8 @@ function FinalWelcome({profile, onProceed}) {
             );
         }
 
+        // 6. Stats stagger
+
         statsRef.current.forEach((s,i)=>{
             if(!s) return;
             gsap.fromTo(s,
@@ -1387,6 +2034,8 @@ function FinalWelcome({profile, onProceed}) {
                 {opacity:1,y:0,scale:1,duration:.6,delay:1.2+i*.15,ease:'back.out(1.7)'},
             );
         });
+
+        // 7. CTA pulse loop
 
         gsap.fromTo('.welcome-cta',
             {boxShadow:`0 16px 48px rgba(136,14,79,.2)`},
@@ -1423,18 +2072,57 @@ function FinalWelcome({profile, onProceed}) {
                     {profile.photo?(
                         <img src={profile.photo} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                     ):(
-                        <div style={{width:'100%',height:'100%',
-                            background:`linear-gradient(135deg,${T.roseDeep},${T.goldDark})`,
-                            display:'flex',alignItems:'center',justifyContent:'center'}}>
+                        <div
+                            style={
+                            {
+                                width:'100%',
+                                height:'100%',
+                                background:`linear-gradient(135deg,${T.roseDeep},${T.goldDark})`,
+                                display:'flex',
+                                alignItems:'center',
+                                justifyContent:'center'
+                            }
+                        }
+                        >
                             <User size={52} color="white"/>
                         </div>
                     )}
+
                 </div>
-                <div style={{position:'absolute',bottom:6,right:6,width:22,height:22,borderRadius:'50%',
-                    background:'#4ADE80',border:`3px solid ${T.cream}`,
-                    boxShadow:'0 2px 8px rgba(74,222,128,.5)'}}>
-                    <motion.div animate={{scale:[1,1.4,1],opacity:[.8,0,.8]}} transition={{duration:2,repeat:Infinity}}
-                                style={{width:'100%',height:'100%',borderRadius:'50%',background:'rgba(74,222,128,.5)'}}/>
+                <div
+                    style={
+                    {
+                        position:'absolute',
+                        bottom:6,right:6,
+                        width:22,
+                        height:22,
+                        borderRadius:'50%',
+                        background:'#4ADE80',
+                        border:`3px solid ${T.cream}`,
+                        boxShadow:'0 2px 8px rgba(74,222,128,.5)'
+                    }
+                }>
+                    <motion.div
+                        animate={
+                        {
+                            scale:[1,1.4,1],
+                            opacity:[.8,0,.8]
+                        }
+                    }
+                        transition={
+                        {
+                            duration:2,
+                            repeat:Infinity
+                        }
+                    }
+                        style={
+                        {
+                            width:'100%',
+                            height:'100%',
+                            borderRadius:'50%',
+                            background:'rgba(74,222,128,.5)'
+                        }
+                    }/>
                 </div>
             </div>
 
@@ -1559,27 +2247,80 @@ function GlobalStyles() {
     `}</style>
     );
 }
-
+//Main export
 export default function ProfileCompletion() {
     const navigate = useNavigate();
+    const firstName = localStorage.getItem('user_firstname') || '';
 
-    const [stepIndex,      setStepIndex]      = useState(0);
-    const [profile,        setProfile]        = useState({
-        genre:'', birthday:'', academics:{ faculte:'', niveau:'' }, interests:[], bio:'', photo:null,
+    // State
+
+    // State
+    const [stepIndex, setStepIndex] = useState(() => {
+        try {
+            const saved = localStorage.getItem('ll_profile_draft');
+            return saved ? (JSON.parse(saved).stepIndex ?? 0) : 0;
+        } catch { return 0; }
     });
-    const [showReward,     setShowReward]     = useState(false);
-    const [showFinal,      setShowFinal]      = useState(false);
-    const [showSub,        setShowSub]        = useState(false);
-    const [submitting,     setSubmitting]     = useState(false);
-    const [direction,      setDirection]      = useState(1);
+
+    const [apiInterests, setApiInterests] = useState([]);
+
+    useEffect(() => {
+        const token = localStorage.getItem('ll_access');
+        fetch('/api/interests/', {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        })
+            .then(r => r.json())
+            .then(data => setApiInterests(data))
+            .catch(() => {});
+    }, []);
+
+    const [profile, setProfile] = useState(() => {
+        try {
+            const saved      = localStorage.getItem('ll_profile_draft');
+            const savedPhoto = localStorage.getItem('ll_profile_photo');
+            if (saved) {
+                const p = JSON.parse(saved).profile || {};
+                return {
+                    genre:     p.genre     || '',
+                    birthday:  p.birthday  || '',
+                    academics: p.academics || { faculte:'', niveau:'' },
+                    interests: p.interests || [],
+                    bio:       p.bio       || '',
+                    photo:     savedPhoto  || null,
+                };
+            }
+        } catch {}
+        return { genre:'', birthday:'', academics:{ faculte:'', niveau:'' }, interests:[], bio:'', photo:null };
+    });
+
+    const [showReward, setShowReward] = useState(false);
+    const [showFinal,  setShowFinal]  = useState(false);
+    const [showSub,    setShowSub]    = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [direction,  setDirection]  = useState(1);
+
+    useEffect(() => {
+        const { photo, ...profileSansPhoto } = profile;
+        localStorage.setItem('ll_profile_draft', JSON.stringify({
+            profile: profileSansPhoto,
+            stepIndex,
+        }));
+        if (photo) {
+            try { localStorage.setItem('ll_profile_photo', photo); }
+            catch {}
+        }
+    }, [profile, stepIndex]);
 
     const currentStep = STEPS[stepIndex];
+
+    // ── Validation ──
 
     const canProceed = useMemo(()=>{
         switch(currentStep?.id) {
             case 'genre':     return !!profile.genre;
-            case 'birthday':  return !!profile.birthday && calculateAge(profile.birthday) >= MIN_AGE;
-            case 'academics': return !!profile.academics.faculte && !!profile.academics.niveau;
+            case 'birthday':  return !!profile.birthday && calculateAge(profile.birthday) >= MIN_AGE && calculateAge(profile.birthday) <= MAX_AGE;
+            case 'academics': return !!profile.academics.faculte && !!profile.academics.niveau &&
+                (profile.academics.faculte !== 'Autre' || !!profile.academics.faculteCustom?.trim());
             case 'interests': return profile.interests.length >= MIN_INTERESTS;
             case 'bio':       return profile.bio.trim().length>0 && countWords(profile.bio)<=MAX_BIO_WORDS;
             case 'photo':     return !!profile.photo;
@@ -1587,6 +2328,8 @@ export default function ProfileCompletion() {
             default:          return false;
         }
     },[currentStep, profile]);
+
+    // ── Next / reward ──
 
     const handleNext = useCallback(()=>{
         if(!canProceed) return;
@@ -1608,40 +2351,120 @@ export default function ProfileCompletion() {
         window.scrollTo({top:0,behavior:'smooth'});
     },[stepIndex]);
 
-    const handlePublish = useCallback(async()=>{
+
+
+    // ─────────────────────────────────────────────────────────────────────────────
+// Remplacer entièrement les lignes 2234 à 2269 par ceci :
+// ─────────────────────────────────────────────────────────────────────────────
+
+    const handlePublish = useCallback(async () => {
         setSubmitting(true);
         try {
-            const payload = {
-                genre:      profile.genre,
-                birthday:   profile.birthday,
-                age:        calculateAge(profile.birthday),
-                faculte:    profile.academics.faculte,
-                niveau:     profile.academics.niveau,
-                interests:  profile.interests,
-                bio:        profile.bio.trim(),
-                photo:      profile.photo,
-                university: 'Université de Kara',
-                createdAt:  new Date().toISOString(),
-            };
-            console.log('[LoveLine] Profile payload →', payload);
-            await new Promise(r=>setTimeout(r,1000));
-            setShowFinal(true);
-        } catch(err) {
-            console.error(err);
-            toast.error('Erreur serveur. Réessaie dans un moment.',{
-                style:{background:T.dark,color:T.white,fontFamily:T.fontBody,borderRadius:T.r12,border:`1px solid ${T.roseDeep}`}
-            });
-        } finally { setSubmitting(false); }
-    },[profile]);
+            const token = localStorage.getItem('ll_access');
+            if (!token) throw new Error('Non authentifié');
 
-    const goDashboard = useCallback(()=>{ setShowSub(false); navigate('/dashboard'); },[navigate]);
+            // Convertir les string IDs des intérêts en IDs numériques backend
+            // ex: 'music' → trouver l'Interest dont le name contient 'Musique' → id: 3
+            const interestIds = profile.interests.map(frontId => {
+                const frontItem  = INTERESTS_LIST.find(i => i.id === frontId);
+                const backendItem = apiInterests.find(i =>
+                    i.name.toLowerCase().includes(frontItem?.label?.toLowerCase().split(' ')[0] ?? '')
+                );
+                return backendItem?.id ?? null;
+            }).filter(Boolean);
+
+            // ── 1. Données profil ──────────────────────────────────────────────
+            const payload = {
+                gender:       GENDER_MAP[profile.genre]                       ?? profile.genre,
+                birthday:     profile.birthday,
+                department:   DEPARTMENT_MAP[profile.academics.faculte]       ?? 'OTHER',
+                degree:       DEGREE_MAP[profile.academics.niveau]            ?? profile.academics.niveau,
+                bio:          profile.bio.trim(),
+                interest_ids: interestIds,
+            };
+
+            const res = await fetch('/api/profile/me/complete', {
+                method:  'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (res.status === 401) {
+                const refresh = localStorage.getItem('ll_refresh');
+                if (!refresh) throw new Error('Session expirée, reconnectez-vous');
+                const rr = await fetch('/api/token/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh }),
+                });
+                if (!rr.ok) throw new Error('Session expirée, reconnectez-vous');
+                const { access } = await rr.json();
+                localStorage.setItem('ll_access', access);
+                // rejouer
+                const res2 = await fetch('/api/profile/me/complete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${access}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+                if (!res2.ok) throw new Error('Erreur serveur');
+            } else if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || 'Erreur serveur');
+            }
+
+            // ── 2. Photo ───────────────────────────────────────────────────────
+            if (profile.photo) {
+                const freshToken = localStorage.getItem('ll_access');
+                const b64  = profile.photo.split(',')[1];
+                const bin  = atob(b64);
+                const arr  = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+                const blob = new Blob([arr], { type: 'image/jpeg' });
+
+                const fd = new FormData();
+                fd.append('photo', blob, 'profile.jpg');
+
+                const photoRes = await fetch('/api/profile/me/photo', {
+                    method:  'POST',
+                    headers: { 'Authorization': `Bearer ${freshToken}` },
+                    body:    fd,
+                });
+                if (!photoRes.ok) throw new Error('Erreur upload photo');
+            }
+
+            // ── 3. Succès ──────────────────────────────────────────────────────
+
+            localStorage.removeItem('ll_profile_draft');
+            localStorage.removeItem('ll_profile_photo');
+            setShowFinal(true);
+
+        } catch (err) {
+            console.error(err);
+            toast.error(err.message || 'Erreur serveur. Réessaie dans un moment.', {
+                style: {
+                    background: T.dark, color: T.white,
+                    fontFamily: T.fontBody, borderRadius: T.r12,
+                    border: `1px solid ${T.roseDeep}`,
+                },
+            });
+        } finally {
+            setSubmitting(false);
+        }
+    }, [profile, apiInterests]);
+    const goDashboard = useCallback(()=>{ setShowSub(false); navigate('/app'); },[navigate]);
 
     const slideVariants = {
-        enter:  (d)=>({ x:d>0?80:-80, opacity:0, scale:.96 }),
-        center: { x:0, opacity:1, scale:1 },
-        exit:   (d)=>({ x:d>0?-80:80, opacity:0, scale:.96 }),
+        enter:  ()=>({ opacity:0, scale:.97 }),
+        center: { opacity:1, scale:1 },
+        exit:   ()=>({ opacity:0, scale:.97 }),
     };
-
+// ── keyboard shortcuts ─
     useEffect(()=>{
         const handler = e=>{
             if(e.key==='Enter'&&canProceed&&!showReward&&!showFinal&&!showSub) handleNext();
@@ -1753,7 +2576,7 @@ export default function ProfileCompletion() {
                     </motion.div>
                 </AnimatePresence>
 
-                <LayoutGroup>
+
                     <AnimatePresence mode="wait" custom={direction}>
                         <motion.div key={currentStep.id} custom={direction}
                                     variants={slideVariants} initial="enter" animate="center" exit="exit"
@@ -1767,7 +2590,7 @@ export default function ProfileCompletion() {
                             {currentStep.id==='preview'   && <PreviewStep   profile={profile}/>}
                         </motion.div>
                     </AnimatePresence>
-                </LayoutGroup>
+
 
                 <motion.div initial={{opacity:0,y:28}} animate={{opacity:1,y:0}} transition={{delay:.4}}
                             style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:52,gap:16}}>
@@ -1798,30 +2621,44 @@ export default function ProfileCompletion() {
                             boxShadow:canProceed?`0 12px 44px rgba(136,14,79,.2)`:'none',
                             transition:'all .4s cubic-bezier(.34,1.56,.64,1)',
                             position:'relative',overflow:'hidden',minWidth:172}}>
-                        {canProceed&&(
-                            <motion.div animate={{x:['200%','-200%']}} transition={{duration:2,repeat:Infinity,ease:'linear'}}
-                                        style={{position:'absolute',inset:0,
-                                            background:'linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)'}}/>
-                        )}
-                        {submitting?(
-                            <>
-                                <motion.div animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}}>
-                                    <RefreshCw size={19}/>
-                                </motion.div>
-                                Publication…
-                            </>
-                        ):currentStep.id==='preview'?(
-                            <><Heart size={19} fill="white"/> Publier mon profil <ArrowRight size={19}/></>
-                        ):(
-                            <>Continuer <ChevronRight size={19}/></>
-                        )}
+
+                        <motion.div
+                            animate={canProceed ? {x:['200%','-200%']} : {x:'200%'}}
+                            transition={{
+                                duration: 2,
+                                repeat: canProceed ? Infinity : 0,
+                                ease: 'linear'
+                            }}
+                            style={{
+                                position:'absolute', top:0, left:0, right:0, bottom:0,
+                                background:'linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)',
+                                opacity: canProceed ? 1 : 0,
+                                pointerEvents:'none',
+                            }}
+                        />
+                        <span style={{display: submitting ? 'flex' : 'none', alignItems:'center', gap:8}}>
+                            <motion.div
+                                animate={{rotate: submitting ? 360 : 0}}
+                                transition={{duration:1, repeat: submitting ? Infinity : 0, ease:'linear'}}
+                            >
+                                <RefreshCw size={19}/>
+                            </motion.div>
+                            Publication…
+                        </span>
+                        <span style={{display: submitting ? 'none' : 'flex', alignItems:'center', gap:8}}>
+                            {currentStep.id==='preview'
+                                ? <><Heart size={19} fill="white"/> Publier mon profil <ArrowRight size={19}/></>
+                                : <>Continuer <ChevronRight size={19}/></>
+                            }
+                        </span>
                     </motion.button>
                 </motion.div>
 
                 <AnimatePresence>
                     {!canProceed&&(
-                        <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}}
-                                    exit={{opacity:0,height:0}} style={{overflow:'hidden'}}>
+                        <motion.div key="hint" initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}}
+                                    exit={{opacity:0,y:-8}} transition={{duration:.25}}
+                                    style={{overflow:'hidden'}}>
                             <p style={{fontFamily:T.fontBody,fontSize:12,color:T.textSoft,
                                 textAlign:'center',marginTop:18,
                                 padding:'10px 16px',background:'rgba(136,14,79,.03)',

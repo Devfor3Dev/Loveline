@@ -78,6 +78,45 @@ export default function AuthPage() {
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirm: '' });
     const [errors, setErrors] = useState({});
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        const errs = {};
+        if (!form.email)    errs.email    = 'Email requis';
+        if (!form.password) errs.password = 'Mot de passe requis';
+        if (Object.keys(errs).length) { setErrors(errs); return; }
+
+        setLoading(true);
+        try {
+            await login(form.email, form.password);
+            navigate('/app');
+        } catch (err) {
+            setErrors({ password: err.message || 'Identifiants incorrects' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        const errs = {};
+        if (!form.firstName) errs.firstName = 'Prénom requis';
+        if (!form.lastName)  errs.lastName  = 'Nom requis';
+        if (!form.email)     errs.email     = 'Email requis';
+        if (!form.password)  errs.password  = 'Mot de passe requis (min. 8 caractères)';
+        if (form.password.length < 8) errs.password = 'Minimum 8 caractères';
+        if (Object.keys(errs).length) { setErrors(errs); return; }
+
+        setLoading(true);
+        try {
+            await register(form);
+            await login(form.email, form.password);  // ← connecte automatiquement
+            navigate('/complete-profile');
+        } catch (err) {
+            setErrors({ email: err.message || "Erreur lors de l'inscription" });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const toggleMode = () => {
         setErrors({});
@@ -190,11 +229,11 @@ export default function AuthPage() {
                                 Accède à ton<br /><em style={{ fontStyle: 'italic', color: C.primary }}>espace</em>
                             </h1>
                         </div>
-                        <form style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} onSubmit={(e) => e.preventDefault()}>
-                            <Field icon={Mail} name="email" type="email" placeholder="Email universitaire" value={form.email} onChange={handleChange} />
-                            <Field icon={Lock} name="password" type="password" placeholder="Mot de passe" value={form.password} onChange={handleChange} />
-                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} style={{ marginTop: '10px', padding: '16px', borderRadius: '14px', background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, color: C.white, border: 'none', fontFamily: "'Raleway', sans-serif", fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(157,23,77,0.2)' }}>
-                                Se connecter
+                        <form style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} onSubmit={handleLogin}>
+                            <Field icon={Mail} name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} error={errors.email} />
+                            <Field icon={Lock} name="password" type="password" placeholder="Mot de passe" value={form.password} onChange={handleChange} error={errors.password} />
+                            <motion.button type="submit" disabled={loading} whileHover={{ scale: loading ? 1 : 1.02 }} whileTap={{ scale: 0.98 }} style={{ marginTop: '10px', padding: '16px', borderRadius: '14px', background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, color: C.white, border: 'none', fontFamily: "'Raleway', sans-serif", fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, boxShadow: '0 8px 20px rgba(157,23,77,0.2)' }}>
+                                {loading ? 'Connexion…' : 'Se connecter'}
                             </motion.button>
                         </form>
                     </div>
@@ -206,15 +245,16 @@ export default function AuthPage() {
                                 Crée ton<br /><em style={{ fontStyle: 'italic', color: C.primary }}>compte</em>
                             </h1>
                         </div>
-                        <form style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} onSubmit={(e) => e.preventDefault()}>
+                        <form style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} onSubmit={handleRegister}>
                             <div style={{ display: 'flex', gap: '12px' }}>
-                                <Field icon={User} name="firstName" placeholder="Prénom" value={form.firstName} onChange={handleChange} />
-                                <Field icon={User} name="lastName" placeholder="Nom" value={form.lastName} onChange={handleChange} />
+
                             </div>
-                            <Field icon={Mail} name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} />
-                            <Field icon={Lock} name="password" type="password" placeholder="Mot de passe" value={form.password} onChange={handleChange} />
-                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} style={{ marginTop: '10px', padding: '16px', borderRadius: '14px', background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, color: C.white, border: 'none', fontFamily: "'Raleway', sans-serif", fontWeight: 600, cursor: 'pointer', boxShadow: '0 8px 20px rgba(157,23,77,0.2)' }}>
-                                S'inscrire
+                            <Field icon={User} name="firstName" placeholder="Prénom" value={form.firstName} onChange={handleChange} error={errors.firstName} />
+                            <Field icon={User} name="lastName" placeholder="Nom" value={form.lastName} onChange={handleChange} error={errors.lastName} />
+                            <Field icon={Mail} name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} error={errors.email} />
+                            <Field icon={Lock} name="password" type="password" placeholder="Mot de passe" value={form.password} onChange={handleChange} error={errors.password} />
+                            <motion.button type="submit" disabled={loading} whileHover={{ scale: loading ? 1 : 1.02 }} whileTap={{ scale: 0.98 }} style={{ marginTop: '10px', padding: '16px', borderRadius: '14px', background: `linear-gradient(135deg, ${C.primary}, ${C.accent})`, color: C.white, border: 'none', fontFamily: "'Raleway', sans-serif", fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, boxShadow: '0 8px 20px rgba(157,23,77,0.2)' }}>
+                                {loading ? 'Inscription…' : "S'inscrire"}
                             </motion.button>
                         </form>
                     </div>

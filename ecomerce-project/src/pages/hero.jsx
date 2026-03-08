@@ -1,253 +1,296 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-export default function Navbar() {
-    const navRef = useRef(null);
-    const [scrolled, setScrolled] = useState(false);
-    const [menuOpen, setMenuOpen] = useState(false);
+gsap.registerPlugin(ScrollTrigger);
+
+// COULEURS STRICTES
+const C = {
+    primary: "#9d174d", // Deep Pink
+    accent: "#db2777",  // Vibrant Pink
+    text: "#500724",    // Deep Wine
+    secondary: "#fce7f3", // Light Pink
+    white: "#ffffff",
+    gold: "#d4af37",    // Luxury Gold
+};
+
+// IMAGES LOCALES
+const IMG = {
+    main: "https://images.unsplash.com/photo-1529636444744-4b0f7a0ace9e?q=80&w=800", // Couple/Emotion
+    detail: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?q=80&w=600" // Mains/Connexion
+};
+
+const Hero = () => {
+    const sectionRef = useRef(null);
+    const titleRef = useRef(null);
 
     useEffect(() => {
-        // Entrance animation
-        gsap.fromTo(
-            navRef.current,
-            { y: -80, opacity: 0 },
-            { y: 0, opacity: 1, duration: 1, ease: 'power3.out', delay: 0.3 }
-        );
+        let ctx = gsap.context(() => {
+            const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
-        const onScroll = () => setScrolled(window.scrollY > 40);
-        window.addEventListener('scroll', onScroll);
-        return () => window.removeEventListener('scroll', onScroll);
+            // 1. Révélation Typographique (Masque fluide)
+            tl.from(".word-mask span", {
+                y: "110%",
+                rotation: 3,
+                duration: 1.8,
+                stagger: 0.15,
+                ease: "expo.out"
+            })
+                // 2. Apparition du contenu secondaire
+                .from(".fade-in", {
+                    opacity: 0,
+                    y: 30,
+                    duration: 1,
+                    stagger: 0.2
+                }, "-=1")
+                // 3. Révélation de la sculpture visuelle (L'Arche)
+                .from(".art-sculpture", {
+                    scale: 0.8,
+                    opacity: 0,
+                    borderRadius: "100%",
+                    duration: 2,
+                    ease: "elastic.out(1, 0.75)"
+                }, "-=1.5");
+
+            // Parallaxe au scroll (Desktop uniquement pour la performance)
+            ScrollTrigger.matchMedia({
+                "(min-width: 1024px)": function() {
+                    gsap.to(".parallax-art", {
+                        y: -80,
+                        scrollTrigger: {
+                            trigger: sectionRef.current,
+                            start: "top top",
+                            scrub: 1.2
+                        }
+                    });
+                }
+            });
+
+        }, sectionRef);
+
+        return () => ctx.revert();
     }, []);
 
-    const links = ['Découvrir', 'Fonctionnalités', 'Témoignages', 'Tarifs'];
-
     return (
-        <>
-            <nav
-                ref={navRef}
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    zIndex: 1000,
-                    padding: scrolled ? '12px 48px' : '20px 48px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: scrolled
-                        ? 'rgba(255,240,245,0.72)'
-                        : 'rgba(255,240,245,0.15)',
-                    backdropFilter: scrolled ? 'blur(24px)' : 'blur(8px)',
-                    WebkitBackdropFilter: scrolled ? 'blur(24px)' : 'blur(8px)',
-                    borderBottom: scrolled
-                        ? '1px solid rgba(255,255,255,0.55)'
-                        : '1px solid rgba(255,255,255,0.2)',
-                    boxShadow: scrolled
-                        ? '0 8px 32px rgba(157,23,77,0.08)'
-                        : 'none',
-                    transition: 'all 0.5s cubic-bezier(0.4,0,0.2,1)',
-                }}
-            >
-                {/* Logo */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                        <path
-                            d="M14 25s-11-7-11-13.5A6.5 6.5 0 0 1 14 7a6.5 6.5 0 0 1 11 4.5C25 18 14 25 14 25z"
-                            fill="none"
-                            stroke="var(--gold)"
-                            strokeWidth="1.2"
-                        />
-                    </svg>
-                    <span
-                        style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: '22px',
-                            fontWeight: 400,
-                            letterSpacing: '0.06em',
-                            color: 'var(--primary)',
-                        }}
-                    >
-            LoveLine
-          </span>
+        <section ref={sectionRef} className="hero-section">
+            {/* Fond subtil */}
+            <div className="bg-gradient" />
+
+            <div className="content-container">
+
+                {/* --- BLOC TYPOGRAPHIQUE --- */}
+                <div className="typography-block">
+                    <h1 ref={titleRef} className="headline">
+                        <div className="word-mask"><span>Trouve ta</span></div>
+                        <div className="word-mask"><span className="italic">moitié</span></div>
+                        <div className="word-mask"><span>sur le campus.</span></div>
+                    </h1>
+
+                    <p className="description fade-in">
+                        Une connexion authentique commence ici. Loin des swipes,
+                        proche de la réalité. Ton histoire t'attend.
+                    </p>
+
+                    <motion.div className="cta-wrapper fade-in" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                        <button className="cta-button">
+                            COMMENCER L'HISTOIRE
+                            <div className="btn-glow" />
+                        </button>
+                    </motion.div>
                 </div>
 
-                {/* Desktop links */}
-                <ul
-                    style={{
-                        display: 'flex',
-                        gap: '40px',
-                        listStyle: 'none',
-                    }}
-                    className="nav-links"
-                >
-                    {links.map((link) => (
-                        <li key={link}>
-                            <a
-                                href={`#${link.toLowerCase()}`}
-                                style={{
-                                    fontFamily: 'var(--font-body)',
-                                    fontSize: '12px',
-                                    fontWeight: 500,
-                                    letterSpacing: '0.12em',
-                                    textTransform: 'uppercase',
-                                    color: 'var(--text)',
-                                    opacity: 0.75,
-                                    transition: 'opacity 0.25s, color 0.25s',
-                                    position: 'relative',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.opacity = '1';
-                                    e.currentTarget.style.color = 'var(--accent)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.opacity = '0.75';
-                                    e.currentTarget.style.color = 'var(--text)';
-                                }}
-                            >
-                                {link}
-                            </a>
-                        </li>
-                    ))}
-                </ul>
+                {/* --- SCULPTURE VISUELLE --- */}
+                <div className="art-block parallax-art">
+                    <div className="art-sculpture">
+                        <img src={IMG.main} alt="Connexion authentique" className="art-img" />
+                        <div className="img-overlay" />
+                    </div>
 
-                {/* CTA Button */}
-                <a
-                    href="ecomerce-project/src/pages/hero.jsx#signup"
-                    style={{
-                        fontFamily: 'var(--font-body)',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        letterSpacing: '0.14em',
-                        textTransform: 'uppercase',
-                        color: 'var(--white)',
-                        background: 'linear-gradient(135deg, var(--accent), var(--primary))',
-                        padding: '12px 28px',
-                        borderRadius: '40px',
-                        boxShadow: 'var(--shadow-btn)',
-                        transition: 'transform 0.25s var(--transition-spring), box-shadow 0.25s',
-                        display: 'none',
-                    }}
-                    className="nav-cta"
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.04) translateY(-1px)';
-                        e.currentTarget.style.boxShadow =
-                            '0 12px 32px rgba(219,39,119,0.45)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1) translateY(0)';
-                        e.currentTarget.style.boxShadow = 'var(--shadow-btn)';
-                    }}
-                >
-                    Rejoindre
-                </a>
+                    {/* Éléments Desktop uniquement */}
+                    <div className="desktop-elements">
+                        <div className="secondary-art fade-in">
+                            <img src={IMG.detail} alt="Détail" className="art-img" />
+                        </div>
 
-                {/* Hamburger */}
-                <button
-                    onClick={() => setMenuOpen(!menuOpen)}
-                    className="hamburger"
-                    style={{
-                        display: 'none',
-                        flexDirection: 'column',
-                        gap: '5px',
-                        background: 'none',
-                        border: 'none',
-                        padding: '4px',
-                    }}
-                >
-                    {[0, 1, 2].map((i) => (
-                        <span
-                            key={i}
-                            style={{
-                                display: 'block',
-                                width: '24px',
-                                height: '1.5px',
-                                background: 'var(--primary)',
-                                transition: 'all 0.3s',
-                                transform:
-                                    menuOpen && i === 0
-                                        ? 'translateY(6.5px) rotate(45deg)'
-                                        : menuOpen && i === 2
-                                            ? 'translateY(-6.5px) rotate(-45deg)'
-                                            : menuOpen && i === 1
-                                                ? 'scaleX(0)'
-                                                : 'none',
-                            }}
-                        />
-                    ))}
-                </button>
-            </nav>
-
-            {/* Mobile menu */}
-            {menuOpen && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: '72px',
-                        left: '16px',
-                        right: '16px',
-                        zIndex: 999,
-                        background: 'rgba(255,240,245,0.95)',
-                        backdropFilter: 'blur(24px)',
-                        WebkitBackdropFilter: 'blur(24px)',
-                        borderRadius: '20px',
-                        border: '1px solid rgba(255,255,255,0.7)',
-                        padding: '24px',
-                        boxShadow: '0 24px 64px rgba(157,23,77,0.15)',
-                    }}
-                >
-                    {links.map((link) => (
-                        <a
-                            key={link}
-                            href={`#${link.toLowerCase()}`}
-                            onClick={() => setMenuOpen(false)}
-                            style={{
-                                display: 'block',
-                                fontFamily: 'var(--font-body)',
-                                fontSize: '14px',
-                                fontWeight: 500,
-                                letterSpacing: '0.1em',
-                                textTransform: 'uppercase',
-                                color: 'var(--text)',
-                                padding: '16px 0',
-                                borderBottom: '1px solid rgba(157,23,77,0.1)',
-                            }}
+                        <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                            className="gold-badge fade-in"
                         >
-                            {link}
-                        </a>
-                    ))}
-                    <a
-                        href="ecomerce-project/src/pages/hero.jsx#signup"
-                        style={{
-                            display: 'block',
-                            textAlign: 'center',
-                            marginTop: '20px',
-                            padding: '14px',
-                            borderRadius: '40px',
-                            background: 'linear-gradient(135deg, var(--accent), var(--primary))',
-                            color: 'var(--white)',
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            letterSpacing: '0.14em',
-                            textTransform: 'uppercase',
-                        }}
-                    >
-                        Rejoindre
-                    </a>
+                            <svg viewBox="0 0 100 100">
+                                <path id="txtPath" d="M 50, 50 m -37, 0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0" fill="none"/>
+                                <text fill={C.gold} fontSize="9.5" fontWeight="600" letterSpacing="2.5">
+                                    <textPath href="#txtPath">• LOVELINE • AUTHENTIC • CAMPUS •</textPath>
+                                </text>
+                            </svg>
+                        </motion.div>
+                    </div>
                 </div>
-            )}
+
+            </div>
 
             <style>{`
-        @media (min-width: 768px) {
-          .nav-cta { display: inline-block !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400;1,500&family=Montserrat:wght@300;400;500;600&display=swap');
+
+        /* --- STYLES DE BASE (MOBILE FIRST) --- */
+        .hero-section {
+          position: relative;
+          min-height: 100vh;
+          background-color: ${C.white};
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          padding: 100px 24px 60px;
         }
-        @media (max-width: 767px) {
-          .nav-links { display: none !important; }
-          .hamburger { display: flex !important; }
-          nav { padding: 16px 24px !important; }
+
+        .bg-gradient {
+          position: absolute; inset: 0; pointer-events: none;
+          background: radial-gradient(circle at 50% 10%, ${C.secondary} 0%, transparent 60%),
+                      radial-gradient(circle at 90% 90%, ${C.secondary}33 0%, transparent 50%);
+        }
+
+        .content-container {
+          display: flex;
+          flex-direction: column; /* Empilement vertical sur mobile */
+          align-items: center;
+          text-align: center;
+          width: 100%;
+          max-width: 1400px;
+          margin: 0 auto;
+          gap: 60px;
+          z-index: 10;
+        }
+
+        /* TYPOGRAPHIE */
+        .typography-block { display: flex; flex-direction: column; align-items: center; }
+
+        .headline {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: clamp(48px, 9vw, 120px);
+          line-height: 0.9;
+          color: ${C.text};
+          font-weight: 300;
+          margin-bottom: 30px;
+          letter-spacing: -0.02em;
+        }
+
+        .word-mask { overflow: hidden; display: block; }
+        .word-mask span { display: block; transform-origin: bottom left; }
+        .italic { font-style: italic; color: ${C.primary}; font-weight: 400; }
+
+        .description {
+          font-family: 'Montserrat', sans-serif;
+          font-size: 16px;
+          color: ${C.text};
+          opacity: 0.8;
+          line-height: 1.7;
+          max-width: 450px;
+          margin-bottom: 40px;
+          font-weight: 400;
+        }
+
+        /* BOUTON */
+        .cta-button {
+          position: relative;
+          background: ${C.text};
+          color: ${C.white};
+          border: none;
+          padding: 20px 40px;
+          font-family: 'Montserrat', sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 3px;
+          cursor: pointer;
+          overflow: hidden;
+          border-radius: 2px;
+        }
+        .btn-glow {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, ${C.primary}44 0%, transparent 60%);
+            opacity: 0; transition: opacity 0.4s ease;
+        }
+        .cta-button:hover .btn-glow { opacity: 1; }
+
+        /* ART VISUEL (MOBILE) */
+        .art-block {
+          position: relative;
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+
+        .art-sculpture {
+          width: 280px;
+          height: 360px;
+          /* Forme organique élégante pour le mobile */
+          border-radius: 140px 140px 40px 40px;
+          overflow: hidden;
+          position: relative;
+          box-shadow: 0 30px 70px ${C.text}1A;
+          border: 4px solid ${C.white};
+        }
+
+        .art-img { width: 100%; height: 100%; object-fit: cover; }
+        .img-overlay { position: absolute; inset: 0; background: linear-gradient(to top, ${C.text}66, transparent 40%); }
+
+        .desktop-elements { display: none; /* Caché sur mobile */ }
+
+        /* --- VERSION DESKTOP (MEDIA QUERY) --- */
+        @media (min-width: 1024px) {
+          .hero-section { padding: 0 5%; align-items: center; }
+          
+          .content-container {
+            flex-direction: row; /* Disposition horizontale */
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+            height: 80vh;
+          }
+
+          .typography-block { align-items: flex-start; width: 50%; }
+          .description { margin-left: 0; font-size: 18px; }
+
+          .art-block {
+            width: 45%;
+            height: 600px;
+            justify-content: flex-end;
+            align-items: center;
+          }
+
+          .art-sculpture {
+            width: 380px;
+            height: 550px;
+            /* Grande arche majestueuse sur desktop */
+            border-radius: 200px 200px 0 0;
+            box-shadow: 20px 20px 80px ${C.text}22;
+            z-index: 2;
+          }
+
+          .desktop-elements { display: block; position: absolute; inset: 0; pointer-events: none; }
+          
+          .secondary-art {
+            position: absolute;
+            left: -20px; bottom: 80px;
+            width: 200px; height: 260px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 8px solid ${C.white};
+            box-shadow: 0 15px 40px ${C.text}15;
+            z-index: 1;
+            transform: rotate(-6deg);
+          }
+
+          .gold-badge {
+            position: absolute;
+            top: 12%; right: -50px;
+            width: 150px; height: 150px;
+            z-index: 3;
+          }
         }
       `}</style>
-        </>
+        </section>
     );
-}
+};
+
+export default Hero;

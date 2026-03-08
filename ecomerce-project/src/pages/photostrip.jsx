@@ -1,16 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
 gsap.registerPlugin(ScrollTrigger);
-
+import AbelPhoto from '../assets/abel.jpg';
+import GracePhoto from '../assets/grace.jpg';
 const STRIP_PHOTOS = [
-    { src: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=320&q=80', label: 'Accra, Ghana' },
-    { src: 'https://images.unsplash.com/photo-1529636444744-4b0f7a0ace9e?w=320&q=80', label: 'Lomé, Togo' },
-    { src: 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=320&q=80', label: 'Dakar, Sénégal' },
-    { src: 'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=320&q=80', label: 'Abidjan, CI' },
-    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Cotonou, Bénin' },
-    { src: 'https://images.unsplash.com/photo-1521119989659-a83eee488004?w=320&q=80', label: 'Bamako, Mali' },
+    { src: AbelPhoto, label: "Abel" },
+    { src: 'GracePhoto', label: 'Grâce' },
+    { src: 'GracePhoto', label: 'Gloria' },
+    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
+    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Constant' },
+    { src: '', label: 'Ornella' },
 ];
 
 function PhotoCard({ src, label }) {

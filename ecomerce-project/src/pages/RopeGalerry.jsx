@@ -1,242 +1,255 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const ROPE_PHOTOS = [
-    'https://images.unsplash.com/photo-1529636444744-4b0f7a0ace9e?w=280&q=80',
-    'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=280&q=80',
-    'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=280&q=80',
-    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=280&q=80',
-    'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=280&q=80',
+    'https://images.unsplash.com/photo-1529636444744-4b0f7a0ace9e?w=600&q=80',
+    'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=600&q=80',
+    'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=600&q=80',
+    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80',
 ];
+
+const C = {
+    primary: "#9d174d",
+    accent: "#db2777",
+    text: "#500724",
+    secondary: "#fce7f3",
+    gold: "#d4af37",
+    white: "#ffffff"
+};
 
 export default function RopeGallery() {
     const sectionRef = useRef(null);
     const svgRef = useRef(null);
     const photosRef = useRef([]);
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
         const ctx = gsap.context(() => {
-            // Rope draw animation
-            const path = svgRef.current?.querySelector('path');
+            // 1. Dessin de la corde (GSAP)
+            const path = svgRef.current?.querySelector('.main-path');
             if (path) {
                 const len = path.getTotalLength();
                 gsap.set(path, { strokeDasharray: len, strokeDashoffset: len });
                 gsap.to(path, {
                     strokeDashoffset: 0,
-                    duration: 2.5,
-                    ease: 'power2.inOut',
+                    duration: 3,
+                    ease: "power2.inOut",
                     scrollTrigger: {
                         trigger: sectionRef.current,
-                        start: 'top 75%',
-                    },
+                        start: "top 60%",
+                    }
                 });
             }
 
-            // Photos hang in with swing
+            // 2. Balancement des photos (Animation organique)
             photosRef.current.forEach((photo, i) => {
+                if (!photo) return;
+
+                // Entrée
                 gsap.fromTo(photo,
-                    { opacity: 0, y: -40, rotate: i % 2 === 0 ? -15 : 15 },
+                    { opacity: 0, scale: 0.8, y: -20 },
                     {
-                        opacity: 1,
-                        y: 0,
-                        rotate: i % 2 === 0 ? -4 + i * 1.5 : 4 - i * 1.5,
-                        duration: 1.2,
-                        delay: 0.3 + i * 0.18,
-                        ease: 'elastic.out(1, 0.5)',
+                        opacity: 1, scale: 1, y: 0,
+                        duration: 1.5,
+                        delay: i * 0.2,
+                        ease: "expo.out",
                         scrollTrigger: {
-                            trigger: sectionRef.current,
-                            start: 'top 75%',
-                        },
+                            trigger: photo,
+                            start: "top 90%",
+                        }
                     }
                 );
 
-                // Gentle sway
+                // Swing perpétuel
                 gsap.to(photo, {
-                    rotate: `+=${i % 2 === 0 ? 3 : -3}`,
-                    duration: 2.5 + i * 0.4,
-                    ease: 'sine.inOut',
+                    rotate: i % 2 === 0 ? 2 : -2,
+                    duration: 3 + i,
                     repeat: -1,
                     yoyo: true,
-                    delay: i * 0.3,
+                    ease: "sine.inOut",
+                    delay: i * 0.5
                 });
             });
-
-            // Section fade in
-            gsap.fromTo('.rope-header',
-                { opacity: 0, y: 32 },
-                {
-                    opacity: 1, y: 0, duration: 1, ease: 'power3.out',
-                    scrollTrigger: { trigger: '.rope-header', start: 'top 85%' },
-                }
-            );
         }, sectionRef);
 
-        return () => ctx.revert();
-    }, []);
+        return () => {
+            ctx.revert();
+            window.removeEventListener('resize', checkMobile);
+        };
+    }, [isMobile]);
+
+    // Path de la corde : Horizontal pour PC, Zigzag pour Mobile
+    const desktopPath = "M 0 50 C 150 20, 350 120, 550 60 C 750 20, 950 120, 1100 50";
+    const mobilePath = "M 50 0 C 80 150, 20 300, 50 450 C 80 600, 20 750, 50 900";
 
     return (
-        <section
-            ref={sectionRef}
-            style={{
-                padding: '120px 48px',
-                background: 'linear-gradient(180deg, var(--bg) 0%, var(--secondary) 100%)',
-                overflow: 'hidden',
-            }}
-        >
-            {/* Header */}
-            <div className="rope-header" style={{ textAlign: 'center', marginBottom: '80px' }}>
-                <div className="section-label" style={{ justifyContent: 'center' }}>
-                    Galerie
-                </div>
-                <h2 style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: 'clamp(32px, 4vw, 56px)',
-                    fontWeight: 300,
-                    color: 'var(--text)',
-                    lineHeight: 1.2,
-                }}>
-                    Leurs histoires,<br />
-                    <em style={{ color: 'var(--primary)', fontStyle: 'italic' }}>tes inspirations</em>
+        <section ref={sectionRef} style={s.section}>
+            <div className="header" style={s.header}>
+                <motion.span
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    style={s.label}
+                >
+                    GALERIE
+                </motion.span>
+                <h2 style={s.title}>
+                    Leurs histoires, <br />
+                    <span style={s.italic}>tes inspirations.</span>
                 </h2>
             </div>
 
-            {/* Rope + Photos container */}
-            <div style={{
-                position: 'relative',
-                maxWidth: '1100px',
-                margin: '0 auto',
-                height: '440px',
-            }}>
-                {/* SVG Rope */}
+            <div style={isMobile ? s.mobileContainer : s.desktopContainer}>
+                {/* La Corde SVG */}
                 <svg
                     ref={svgRef}
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '160px',
-                        overflow: 'visible',
-                        zIndex: 1,
-                    }}
-                    viewBox="0 0 1100 160"
-                    preserveAspectRatio="none"
+                    viewBox={isMobile ? "0 0 100 900" : "0 0 1100 160"}
+                    preserveAspectRatio={isMobile ? "xMidYMin meet" : "none"}
+                    style={s.svg}
                 >
-                    {/* Main rope curve */}
                     <path
-                        d="M 0 40 C 120 20, 200 80, 275 50 C 350 20, 430 80, 550 55 C 670 30, 750 80, 825 50 C 900 20, 980 70, 1100 40"
+                        className="main-path"
+                        d={isMobile ? mobilePath : desktopPath}
                         fill="none"
-                        stroke="var(--gold)"
-                        strokeWidth="1.5"
-                        opacity="0.7"
+                        stroke={C.gold}
+                        strokeWidth={isMobile ? "1" : "1.5"}
                     />
-                    {/* Shadow rope */}
-                    <path
-                        d="M 0 40 C 120 20, 200 80, 275 50 C 350 20, 430 80, 550 55 C 670 30, 750 80, 825 50 C 900 20, 980 70, 1100 40"
-                        fill="none"
-                        stroke="rgba(157,23,77,0.15)"
-                        strokeWidth="3"
-                    />
-
-                    {/* Clips / pegs */}
-                    {[140, 305, 465, 635, 800].map((x, i) => (
-                        <g key={i}>
-                            <rect
-                                x={x - 4} y={i % 2 === 0 ? 44 : 42}
-                                width="8" height="14"
-                                rx="2"
-                                fill="var(--gold)"
-                                opacity="0.8"
-                            />
-                            <line
-                                x1={x} y1={i % 2 === 0 ? 58 : 56}
-                                x2={x} y2={180}
-                                stroke="rgba(212,175,55,0.35)"
-                                strokeWidth="1"
-                                strokeDasharray="3 3"
-                            />
-                        </g>
-                    ))}
                 </svg>
 
-                {/* Photos hanging */}
-                {ROPE_PHOTOS.map((src, i) => {
-                    const positions = [80, 237, 392, 560, 720];
-                    const heights = [80, 100, 75, 95, 85];
-                    const widths = [160, 140, 155, 145, 158];
-                    const aspectRatios = [1.35, 1.5, 1.25, 1.4, 1.3];
-
-                    return (
-                        <div
-                            key={i}
-                            ref={(el) => (photosRef.current[i] = el)}
-                            style={{
-                                position: 'absolute',
-                                top: `${heights[i]}px`,
-                                left: `${positions[i]}px`,
-                                width: `${widths[i]}px`,
-                                height: `${Math.round(widths[i] * aspectRatios[i])}px`,
-                                borderRadius: '8px',
-                                overflow: 'hidden',
-                                boxShadow: '0 16px 40px rgba(80,7,36,0.2), 0 4px 12px rgba(0,0,0,0.12)',
-                                border: '3px solid rgba(255,255,255,0.95)',
-                                transformOrigin: 'top center',
-                                zIndex: 2,
-                                cursor: 'pointer',
-                                transition: 'box-shadow 0.3s',
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.boxShadow = '0 24px 56px rgba(80,7,36,0.3), 0 8px 20px rgba(0,0,0,0.15)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.boxShadow = '0 16px 40px rgba(80,7,36,0.2), 0 4px 12px rgba(0,0,0,0.12)';
-                            }}
-                        >
-                            <img
-                                src={src}
-                                alt={`Couple ${i + 1}`}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                            {/* Slight vignette */}
-                            <div style={{
-                                position: 'absolute', inset: 0,
-                                background: 'radial-gradient(ellipse at center, transparent 50%, rgba(80,7,36,0.15))',
-                            }} />
+                {/* Photos */}
+                {ROPE_PHOTOS.map((src, i) => (
+                    <motion.div
+                        key={i}
+                        ref={el => photosRef.current[i] = el}
+                        whileHover={{ scale: 1.05, zIndex: 50 }}
+                        style={{
+                            ...s.photoCard,
+                            ...(isMobile ? s.mobilePos(i) : s.desktopPos(i))
+                        }}
+                    >
+                        <div style={s.polaroid}>
+                            <img src={src} alt="" style={s.img} />
+                            <div style={s.goldClip} />
                         </div>
-                    );
-                })}
-
-                {/* Decorative hearts */}
-                {[180, 460, 740].map((left, i) => (
-                    <div key={i} style={{
-                        position: 'absolute',
-                        top: '20px',
-                        left: `${left}px`,
-                        fontSize: '12px',
-                        opacity: 0.4,
-                        color: 'var(--accent)',
-                        animation: `float-heart ${2 + i * 0.5}s ease-in-out infinite alternate`,
-                    }}>
-                        ♡
-                    </div>
+                    </motion.div>
                 ))}
             </div>
 
             <style>{`
-        @keyframes float-heart {
-          from { transform: translateY(0); }
-          to   { transform: translateY(-6px); }
-        }
-        @media (max-width: 768px) {
-          section > div[style*="height: 440px"] {
-            height: 320px !important;
-            overflow-x: auto;
-          }
-        }
-      `}</style>
+                @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,400&family=Montserrat:wght@300;500&display=swap');
+            `}</style>
         </section>
     );
 }
+
+/* ─── DESIGN SYSTEM "ART PUR" ─── */
+
+const s = {
+    section: {
+        padding: '100px 0',
+        backgroundColor: C.white,
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    header: {
+        textAlign: 'center',
+        marginBottom: '100px',
+        padding: '0 20px'
+    },
+    label: {
+        fontFamily: "'Montserrat', sans-serif",
+        fontSize: '12px',
+        letterSpacing: '4px',
+        color: C.primary,
+        display: 'block',
+        marginBottom: '20px'
+    },
+    title: {
+        fontFamily: "'Cormorant Garamond', serif",
+        fontSize: 'clamp(40px, 6vw, 70px)',
+        fontWeight: 300,
+        color: C.text,
+        lineHeight: 1,
+    },
+    italic: { fontStyle: 'italic', color: C.accent },
+
+    // Conteneurs
+    desktopContainer: {
+        position: 'relative',
+        maxWidth: '1100px',
+        margin: '0 auto',
+        height: '500px',
+    },
+    mobileContainer: {
+        position: 'relative',
+        width: '100%',
+        height: '1000px', // Plus haut pour le zigzag
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+    },
+
+    svg: {
+        position: 'absolute',
+        top: 0, left: 0,
+        width: '100%', height: '100%',
+        pointerEvents: 'none',
+        zIndex: 1
+    },
+
+    // Photos & Styles
+    photoCard: {
+        position: 'absolute',
+        zIndex: 2,
+        cursor: 'pointer',
+    },
+    polaroid: {
+        padding: '10px 10px 30px 10px',
+        backgroundColor: C.white,
+        boxShadow: `0 20px 50px rgba(80, 7, 36, 0.12)`,
+        border: `1px solid ${C.secondary}`,
+        borderRadius: '2px',
+        position: 'relative'
+    },
+    img: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        borderRadius: '1px'
+    },
+    goldClip: {
+        position: 'absolute',
+        top: '-15px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '8px',
+        height: '25px',
+        backgroundColor: C.gold,
+        borderRadius: '10px',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+    },
+
+    // Logic de positionnement
+    desktopPos: (i) => ({
+        width: '200px',
+        height: '260px',
+        left: `${15 + i * 22}%`,
+        top: i % 2 === 0 ? '60px' : '100px',
+        transform: `rotate(${i % 2 === 0 ? -3 : 3}deg)`
+    }),
+
+    mobilePos: (i) => ({
+        width: '240px',
+        height: '320px',
+        top: `${i * 220}px`,
+        left: i % 2 === 0 ? '10%' : '25%',
+        transform: `rotate(${i % 2 === 0 ? -4 : 4}deg)`
+    })
+};

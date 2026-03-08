@@ -160,7 +160,7 @@ export default function Pricing() {
                     margin: '0 auto',
                     lineHeight: 1.8,
                 }}>
-                    Des tarifs pensés pour les étudiants d'Afrique de l'Ouest. Payez en Mobile Money, Orange Money ou carte bancaire.
+                    Des tarifs pensés pour les étudiants de l'université de Kara. Payez en T-money, Flooz ou carte bancaire.
                 </p>
             </div>
 
@@ -398,7 +398,7 @@ export default function Pricing() {
                 opacity: 0.45,
                 letterSpacing: '0.05em',
             }}>
-                Paiement accepté via Orange Money · MTN Mobile Money · Wave · Carte bancaire · Sans engagement
+                Paiement accepté via T-money · Flooz · Bitcoin · Carte bancaire · Sans engagement
             </p>
 
             <style>{`
