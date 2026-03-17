@@ -1,7 +1,5 @@
-/* ═══════════════════════════════════════════════════════════════
-   LoveLine — Swipe Card
-   Individual draggable profile card with physics & animations
-   ═══════════════════════════════════════════════════════════════ */
+
+
 import { useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation } from 'framer-motion';
 import { useTheme } from './useTheme.jsx';

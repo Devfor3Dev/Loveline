@@ -1,7 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
-   LoveLine — Discover Tab (Swipe Deck)
-   The beating heart of the application
-   ═══════════════════════════════════════════════════════════════ */
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from './useTheme.jsx';

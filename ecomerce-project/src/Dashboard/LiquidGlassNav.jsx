@@ -1,8 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
-   LoveLine — Liquid Glass Navigation
-   Ultra-realistic Apple liquid glass — transparent as a water drop
-   Water-stretch morphing between tabs + text distortion
-   ═══════════════════════════════════════════════════════════════ */
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { useTheme } from './useTheme.jsx';

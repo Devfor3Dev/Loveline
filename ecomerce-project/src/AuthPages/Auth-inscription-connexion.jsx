@@ -139,7 +139,7 @@ export default function AuthPage() {
     return (
         <div style={{ minHeight: '100vh', background: C.bg, position: 'relative' }}>
 
-            {/* 🔴 LA MAGIE DU SLIDING DOOR EST ICI (CSS + Media Queries) 🔴 */}
+            {/*  SLIDING DOOR (CSS + Media Queries)  */}
             <style>{`
                 /* Conteneur principal */
                 .sliding-auth-container {

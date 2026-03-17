@@ -1,7 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
-   LoveLine — Profile Tab (COMPLETE)
-   Profile editing, photos, verification, settings, notifications
-   ═══════════════════════════════════════════════════════════════ */
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from './useTheme.jsx';

@@ -1,7 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
-   LoveLine — Likes Tab (Coups de Cœur)
-   See who liked you + AI Top Picks
-   ═══════════════════════════════════════════════════════════════ */
+
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from './useTheme.jsx';

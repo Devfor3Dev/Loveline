@@ -1,5 +1,5 @@
 /**
- * ProfileCompletion.jsx  ·  LoveLine  ·  Université de Kara
+ * ProfileCompletion.jsx  ·
  * ──────────────────────────────────────────────────────────
  * World-class dating app profile setup wizard.
  * Theme: Premium, Professional (Cream, Lavender, RoseDeep, Gold)
@@ -40,7 +40,7 @@ const DEPARTMENT_MAP = {
     'FSS (Médecine & Sciences de la Santé)':  'FSS',
     'ISAPU (Enseignement)':                   'ISAPU',
     "ISMA (Metier de l'Agriculture)":         'ISMA',
-    'PSE (Institut Formation Santé)':         'PSE',
+    'PSE-PDL':                                'PSE-PDL',
     'Autre':                                  'OTHER',
 };
 
@@ -58,7 +58,7 @@ const GENDER_MAP = {
     'femme': 'Femme',
 };
 
-// PART 1 — tokens + config (Updated for a Professional Look)
+// PART 1 — tokens + config
 const T = {
     white: '#FFFFFF',
     cream: '#FDF6F0',
@@ -982,7 +982,7 @@ function StepAcademics({value, onChange}) {
         'FSS (Médecine & Sciences de la Santé)',
         'ISAPU (Enseignement)',
         "ISMA (Metier de l'Agriculture)",
-        'PSE (Institut Formation Santé)',
+        'PSE-PDL',
         'Autre',
     ];
     const niveaux = ['Licence 1', 'Licence 2', 'Licence 3', 'Master 1', 'Master 2', 'Doctorat'];
@@ -2352,10 +2352,6 @@ export default function ProfileCompletion() {
     },[stepIndex]);
 
 
-
-    // ─────────────────────────────────────────────────────────────────────────────
-// Remplacer entièrement les lignes 2234 à 2269 par ceci :
-// ─────────────────────────────────────────────────────────────────────────────
 
     const handlePublish = useCallback(async () => {
         setSubmitting(true);

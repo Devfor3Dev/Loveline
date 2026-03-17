@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   LoveLine — Dashboard.jsx (FICHIER UNIQUE COMPLET)
-   Fusion de tous les modules : api, thème, modals, swipe, discover, explore,
+   LoveLine — Dashboard.jsx
+   api, thème, modals, swipe, discover, explore,
    likes, chat, messages, profil, compte, navigation, dashboard principal.
-   Backend : Django Ninja JWT  —  Frontend : React + Framer Motion + GSAP
+   Backend   —  Frontend : React + Framer Motion + GSAP
    ═══════════════════════════════════════════════════════════════════════════════ */
-
+import EmojiPicker from 'emoji-picker-react';
 import {
     useState, useEffect, useRef, useCallback,
     createContext, useContext, Suspense,
@@ -12,15 +12,16 @@ import {
 import {
     Clock, Cake, Navigation,
     Heart, BarChart2, BellRing, PenLine,
-    ShieldCheck,Compass, Sparkles, MessageCircle, User,
+    ShieldCheck, Compass, Sparkles, MessageCircle, User,
     RotateCcw, Zap, X, ChevronLeft, Search,
     Bell, Camera, Lock, Mail, Settings, Eye, EyeOff,
     Shield, Trash2, LogOut, Star, Check, ChevronRight,
     Mic, Send, Phone, Video, MoreVertical, ArrowLeft,
-    Image, Plus,Users, BadgeCheck, Flame, MapPin, GraduationCap, Filter,
-    Upload, RefreshCw, Info, Moon, Sun,
+    Image, Plus, Users, BadgeCheck, Flame, MapPin,
+    GraduationCap, Filter, Upload, RefreshCw, Info,
+    Moon, Sun, CheckCheck, HeartCrack, AlertTriangle,
+    Smile, Pause, Play, Ban, ChevronDown, MicOff,
 } from 'lucide-react';
-
 import {
     motion, AnimatePresence,
     useMotionValue, useTransform, useAnimation,
@@ -30,11 +31,20 @@ import { gsap } from 'gsap';
 
 
 // ══════════════════════════════════════════════════════════════════════════════
-// COUCHE API — Django Ninja JWT
+// COUCHE API
 // ══════════════════════════════════════════════════════════════════════════════
 //URL des photo
 
 // ── Helper URL photo ─────────────────────────────────────────────────────────
+const getMainPhoto = (profile) => {
+    if (!profile) return null;
+    const main = profile.photos?.find(p => p.is_main) || profile.photos?.[0];
+    const url = main?.url || profile.photo || profile.avatar || null;
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return `http://localhost:8000${url}`;
+};
+
 const photoUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
@@ -69,7 +79,7 @@ const clearTokens = () => {
     localStorage.removeItem('ll_refresh');
 };
 
-// ─── Base fetch avec auto-refresh JWT (Django Ninja JWT) ──────────────────────
+// ─── Base fetch avec auto-refresh JWT ──────────────────────
 async function apiFetch(path, options = {}) {
     const base    = getBaseUrl();
     const token   = getToken();
@@ -128,7 +138,7 @@ async function apiFormData(path, formData, method = 'PATCH') {
     return res.json();
 }
 
-// ─── AUTH (Django Ninja JWT) ──────────────────────────────────────────────────
+// ─── AUTH JWT ──────────────────────────────────────────────────
 const authAPI = {
     login: (email, password) =>
         apiFetch('/api/auth/token/pair', {
@@ -206,14 +216,14 @@ const likesAPI = {
 };
 
 const messagesAPI = {
-    getMatches:         () => apiFetch('/api/matches'),
-    getConversations:   () => apiFetch('/api/messages/conversations'),
-    getMessages:        (matchId, page = 1) => apiFetch(`/api/messages/${matchId}?page=${page}`),
-    sendMessage:        (matchId, content, type = 'text') =>
-        apiFetch(`/api/messages/${matchId}`, { method: 'POST', body: JSON.stringify({ content, type }) }),
-    sendVoiceMessage:   (matchId, formData) => apiFormData(`/api/messages/${matchId}/voice`, formData, 'POST'),
-    markAsRead:         (matchId) => apiFetch(`/api/messages/${matchId}/read`, { method: 'POST' }),
-    deleteConversation: (matchId) => apiFetch(`/api/messages/${matchId}`, { method: 'DELETE' }),
+    getMatches:         () => apiFetch('/api/matches/'),
+    getConversations:   () => apiFetch('/api/conversations/'),
+    getMessages:        (convId, page = 1) => apiFetch(`/api/conversations/${convId}/messages?page=${page}`),
+    sendMessage:        (convId, content) =>
+        apiFetch(`/api/conversations/${convId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
+    sendVoiceMessage:   (convId, formData) => apiFormData(`/api/conversations/${convId}/voice`, formData, 'POST'),
+    markAsRead:         (convId) => apiFetch(`/api/conversations/${convId}/read`, { method: 'POST' }),
+    deleteConversation: (convId) => apiFetch(`/api/conversations/${convId}`, { method: 'DELETE' }),
     unmatch:            (matchId) => apiFetch(`/api/matches/${matchId}/unmatch`, { method: 'POST' }),
     report:             (userId, reason) =>
         apiFetch('/api/report', { method: 'POST', body: JSON.stringify({ user_id: userId, reason }) }),
@@ -282,7 +292,13 @@ class NotificationSocket {
     disconnect() {
         this._dead = true;
         clearTimeout(this._reconnectTimer);
-        if (this.ws) { this.ws.onclose = null; this.ws.close(); }
+        if (this.ws) {
+            this.ws.onclose = null;
+            this.ws.onerror = null;
+            if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+                this.ws.close();
+            }
+        }
     }
 }
 
@@ -291,7 +307,7 @@ class NotificationSocket {
 // SYSTÈME DE THÈME
 // ══════════════════════════════════════════════════════════════════════════════
 /* ═══════════════════════════════════════════════════════════════
-   LoveLine — Theme System (Light & Dark)
+   Theme System
    ═══════════════════════════════════════════════════════════════ */
 
 // ─── Palette ─────────────────────────────────────────────────────────────────
@@ -422,7 +438,7 @@ export const useTheme = () => {
 // MODALS
 // ══════════════════════════════════════════════════════════════════════════════
 /* ═══════════════════════════════════════════════════════════════
-   LoveLine — Match & Premium Modals
+   Match & Premium Modals
    ═══════════════════════════════════════════════════════════════ */
 
 // ─── Particle burst ───────────────────────────────────────────────────────────
@@ -661,7 +677,7 @@ const PLANS = [
         name: 'LoveLine Gold',
         emoji: '✦',
         color: '#D4AF37',
-        price: '3 500',
+        price: '2 500',
         currency: 'FCFA/mois',
         features: [
             'Voir qui vous a liké',
@@ -895,7 +911,7 @@ function PremiumModal({ feature, onClose, onSubscribe }) {
 // SWIPECARD
 // ══════════════════════════════════════════════════════════════════════════════
 /* ═══════════════════════════════════════════════════════════════
-   LoveLine — Swipe Card
+    Swipe Card
    Individual draggable profile card with physics & animations
    ═══════════════════════════════════════════════════════════════ */
 
@@ -1396,7 +1412,7 @@ function UndoButton({ onClick, enabled, isPremium }) {
     );
 }
 
-// ─── NOPE — "Le refus qui libère" ────────────────────────────────────────────
+// ─── NOPE —  ────────────────────────────────────────────
 const NOPE_SHARDS = Array.from({ length: 12 }, (_, i) => ({
     angle: (i / 12) * 360 + (Math.random() - 0.5) * 25,
     dist:  26 + Math.random() * 20,
@@ -1487,7 +1503,7 @@ function NopeButton({ onClick }) {
     );
 }
 
-// ─── LIKE — "Le cœur qui s'emballe" ──────────────────────────────────────────
+// ─── LIKE —  ──────────────────────────────────────────
 const LIKE_PETALS = Array.from({ length: 15 }, (_, i) => {
     const angle  = (i / 15) * Math.PI * 2 - Math.PI / 2;
     const radius = 46 + Math.random() * 26;
@@ -1620,7 +1636,7 @@ function LikeButton({ onLike }) {
     );
 }
 
-// ─── SUPERLIKE — "L'étoile filante" (Premium) ────────────────────────────────
+// ─── SUPERLIKE —  ────────────────────────────────
 const STAR_RAYS = Array.from({ length: 8 }, (_, i) => ({
     angle: (i / 8) * 360,
     dist:  30 + Math.random() * 18,
@@ -1747,7 +1763,7 @@ function SuperLikeButton({ onClick, enabled, isPremium }) {
     );
 }
 
-// ─── BOOST — "La foudre qui révèle" (Premium) ────────────────────────────────
+// ─── BOOST —  ────────────────────────────────
 const BOLT_POSITIONS = Array.from({ length: 6 }, (_, i) => ({
     angle: i * 60 + 30,
     dist:  26 + Math.random() * 12,
@@ -1916,7 +1932,7 @@ function ActionBtn({ onClick, size, color, shadow, disabled, children, title }) 
 
 
 // ══════════════════════════════════════════════════════════════════════════════
-// EMPTY DECK — "La nuit entre deux étoiles"
+// EMPTY DECK —
 // ══════════════════════════════════════════════════════════════════════════════
 const POEM_LINES = [
     "Tu as fait glisser des regards, des sourires, des silences.",
@@ -2243,17 +2259,10 @@ function FilterBar({ filters, onChange, T, isDark }) {
 // DISCOVER TAB — Main export
 // ══════════════════════════════════════════════════════════════════════════════
 // ══════════════════════════════════════════════════════════════════════════════
-//  INSTRUCTIONS D'INSTALLATION
-//  ─────────────────────────────────────────────────────────────────────────────
-//  Dans Loveline.jsx :
-//  1. Trouve la ligne qui dit :
-//       function DiscoverTab({ myProfile, isPremium, onNavigateMessages }) {
-//     (environ ligne 2258)
-//  2. Sélectionne TOUT jusqu'à la ligne juste avant :
-//       // ══════════════════════════════════════════════════════════════════════════════
+
 //       // EXPLORE TAB — Main export
-//     (environ ligne 2880)
-//  3. Remplace par tout ce code
+//
+//
 // ══════════════════════════════════════════════════════════════════════════════
 
 const FREE_SWIPES_PER_DAY = 7;
@@ -3457,7 +3466,7 @@ function ExploreTab() {
 // LIKESTAB
 // ══════════════════════════════════════════════════════════════════════════════
 /* ═══════════════════════════════════════════════════════════════
-   LoveLine — Likes Tab (Coups de Cœur)
+   Likes Tab (Coups de Cœur)
    See who liked you + AI Top Picks
    ═══════════════════════════════════════════════════════════════ */
 
@@ -4149,829 +4158,1721 @@ function LikesTab({ isPremium }) {
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CHATVIEW
+
+
+
 // ══════════════════════════════════════════════════════════════════════════════
-/* ═══════════════════════════════════════════════════════════════
-   LoveLine — Chat View
-   Real-time conversation with WebSocket + voice messages
-   ═══════════════════════════════════════════════════════════════ */
+//  CONSTANTES DESIGN
+// ══════════════════════════════════════════════════════════════════════════════
 
-// ─── Message bubble ───────────────────────────────────────────────────────────
+var CHAT_ROSE_GRADIENT = 'linear-gradient(145deg, #AD1457 0%, #E91E63 60%, #F06292 100%)';
+var CHAT_ROSE_SHADOW   = '0 6px 24px rgba(173,20,87,0.32), 0 2px 8px rgba(173,20,87,0.18)';
+var CHAT_FONT          = "'Poppins', 'SF Pro Text', -apple-system, sans-serif";
+
+var SPRING_SNAPPY  = { type: 'spring', stiffness: 480, damping: 36 };
+var SPRING_GENTLE  = { type: 'spring', stiffness: 280, damping: 30 };
+var SPRING_MORPHING = { type: 'spring', stiffness: 360, damping: 32, mass: 0.9 };
+
+function chatSurface(isDark) {
+    return isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF';
+}
+function chatBorder(isDark) {
+    return isDark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(0,0,0,0.07)';
+}
+function chatBorderColor(isDark) {
+    return isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+}
+function chatBg(isDark) {
+    return isDark ? '#0D0812' : '#F0EBF6';
+}
+function chatHeaderBg(isDark) {
+    return isDark ? 'rgba(13,8,18,0.98)' : 'rgba(255,255,255,0.98)';
+}
+function chatInputBg(isDark) {
+    return isDark ? 'rgba(13,8,18,0.97)' : 'rgba(250,248,253,0.97)';
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MESSAGE BUBBLE
+// ══════════════════════════════════════════════════════════════════════════════
 function MessageBubble({ message, isMe, showAvatar, avatar, T, isDark }) {
-    const isVoice = message.type === 'voice';
-    const [playing, setPlaying] = useState(false);
-    const audioRef = useRef(null);
+    var isVoice   = message.type === 'voice';
+    var isDeleted = !!(message.deleted_at);
 
-    const togglePlay = () => {
-        if (!audioRef.current) return;
-        if (playing) {
-            audioRef.current.pause();
-        } else {
-            audioRef.current.play();
-        }
-        setPlaying(!playing);
-    };
+    // Détecte si le message est un emoji seul (1 à 3 emojis)
+    var EMOJI_REGEX = /^(\p{Emoji_Presentation}|\p{Extended_Pictographic})[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{20E3}]?(\u{200D}(\p{Emoji_Presentation}|\p{Extended_Pictographic})[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{20E3}]?){0,5}(\s*(\p{Emoji_Presentation}|\p{Extended_Pictographic})[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{20E3}]?(\u{200D}(\p{Emoji_Presentation}|\p{Extended_Pictographic})[\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{20E3}]?){0,5}){0,2}$/u;
+    var isSingleEmoji = !isVoice && !isDeleted && message.content && EMOJI_REGEX.test(message.content.trim());
 
-    // Format time
-    const time = new Date(message.created_at).toLocaleTimeString('fr-FR', {
+    var playing    = useState(false);
+    var setPlaying = playing[1];
+    playing        = playing[0];
+
+    var audioRef = useRef(null);
+
+    var time = new Date(message.created_at).toLocaleTimeString('fr-FR', {
         hour: '2-digit', minute: '2-digit',
     });
 
-    const formatDuration = (s) => {
-        const m = Math.floor(s / 60);
-        const sec = s % 60;
-        return `${m}:${String(sec).padStart(2, '0')}`;
-    };
+    function togglePlay() {
+        if (!audioRef.current) return;
+        if (playing) { audioRef.current.pause(); } else { audioRef.current.play(); }
+        setPlaying(!playing);
+    }
+
+    function formatDuration(s) {
+        return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    }
+
+    // ── Couleurs ──────────────────────────────────────────────────────────────
+    var myRadius    = '20px 4px 20px 20px';
+    var theirRadius = '4px 20px 20px 20px';
+    var myBg        = CHAT_ROSE_GRADIENT;
+    var theirBg     = chatSurface(isDark);
+    var theirBord   = chatBorder(isDark);
+    var myShadow    = CHAT_ROSE_SHADOW;
+    var theirShadow = isDark
+        ? '0 2px 12px rgba(0,0,0,0.35)'
+        : '0 1px 8px rgba(0,0,0,0.07)';
+
+    // ── Rendu message supprimé ────────────────────────────────────────────────
+    if (isDeleted) {
+        return (
+            <div style={{
+                display: 'flex',
+                flexDirection: isMe ? 'row-reverse' : 'row',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 3,
+                paddingLeft: isMe ? 56 : 0,
+                paddingRight: isMe ? 0 : 56,
+                opacity: 0.55,
+            }}>
+                <div style={{
+                    padding: '9px 14px',
+                    borderRadius: '20px',
+                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    border: '1px dashed ' + chatBorderColor(isDark),
+                }}>
+                    <span style={{ fontFamily: CHAT_FONT, fontSize: 13, color: T.textMuted, fontStyle: 'italic' }}>
+                        Message supprimé
+                    </span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            initial={{ opacity: 0, y: 10, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
             style={{
                 display: 'flex',
                 flexDirection: isMe ? 'row-reverse' : 'row',
                 alignItems: 'flex-end',
                 gap: 8,
-                marginBottom: 4,
-                paddingLeft: isMe ? 40 : 0,
-                paddingRight: isMe ? 0 : 40,
+                marginBottom: 3,
+                paddingLeft: isMe ? 56 : 0,
+                paddingRight: isMe ? 0 : 56,
             }}
         >
-            {/* Avatar */}
-            {!isMe && (
-                <div style={{
-                    width: 28, height: 28, borderRadius: '50%',
-                    overflow: 'hidden', flexShrink: 0,
-                    opacity: showAvatar ? 1 : 0,
-                    border: `1.5px solid ${T.gold}44`,
-                }}>
-                    <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-            )}
+            {/* Avatar partenaire */}
+            <div style={{
+                width: 28, height: 28, borderRadius: '50%',
+                overflow: 'hidden', flexShrink: 0,
+                opacity: (!isMe && showAvatar) ? 1 : 0,
+                border: '1.5px solid rgba(173,20,87,0.25)',
+                background: CHAT_ROSE_GRADIENT,
+                transition: 'opacity 0.2s',
+            }}>
+                {avatar
+                    ? <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : null
+                }
+            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', gap: 2 }}>
-                {/* Bubble */}
+            <div style={{
+                display: 'flex', flexDirection: 'column',
+                alignItems: isMe ? 'flex-end' : 'flex-start',
+                gap: 4, maxWidth: '80%',
+            }}>
+                {/* ── Bulle vocale ─────────────────────────────────────── */}
                 {isVoice ? (
                     <div style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '10px 16px', borderRadius: 20,
-                        borderBottomRightRadius: isMe ? 6 : 20,
-                        borderBottomLeftRadius: isMe ? 20 : 6,
-                        background: isMe
-                            ? `linear-gradient(135deg, ${T.rose}, ${T.roseLight})`
-                            : isDark ? 'rgba(45,16,32,0.90)' : 'rgba(255,255,255,0.95)',
-                        boxShadow: isMe ? `0 4px 16px ${T.rose}44` : T.shadowCard,
-                        minWidth: 160,
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '11px 16px',
+                        borderRadius: isMe ? myRadius : theirRadius,
+                        background: isMe ? myBg : theirBg,
+                        border: isMe ? 'none' : theirBord,
+                        boxShadow: isMe ? myShadow : theirShadow,
+                        minWidth: 180,
                     }}>
-                        {message.audio_url && (
-                            <audio ref={audioRef} src={message.audio_url}
-                                   onEnded={() => setPlaying(false)} style={{ display: 'none' }} />
-                        )}
+                        {message.audio_url
+                            ? <audio
+                                ref={audioRef}
+                                src={message.audio_url}
+                                onEnded={function() { setPlaying(false); }}
+                                style={{ display: 'none' }}
+                            />
+                            : null
+                        }
+                        {/* Bouton play/pause */}
                         <button onClick={togglePlay} style={{
-                            width: 32, height: 32, borderRadius: '50%',
-                            background: isMe ? 'rgba(255,255,255,0.25)' : `${T.gold}22`,
+                            width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                            background: isMe ? 'rgba(255,255,255,0.22)' : 'rgba(173,20,87,0.10)',
                             border: 'none', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: isMe ? '#fff' : T.gold,
-                            flexShrink: 0,
-                        }}>
-                            {playing ? (
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                                    <rect x="2" y="1" width="3" height="10" rx="1" />
-                                    <rect x="7" y="1" width="3" height="10" rx="1" />
-                                </svg>
-                            ) : (
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                                    <path d="M3 1.5l8 4.5-8 4.5V1.5z" />
-                                </svg>
-                            )}
+                            color: isMe ? '#fff' : '#AD1457',
+                            transition: 'transform 0.12s, background 0.2s',
+                        }}
+                                onMouseDown={function(e) { e.currentTarget.style.transform = 'scale(0.88)'; }}
+                                onMouseUp={function(e)   { e.currentTarget.style.transform = 'scale(1)'; }}
+                        >
+                            {playing
+                                ? <Pause size={15} strokeWidth={2.5} />
+                                : <Play  size={15} strokeWidth={2.5} />
+                            }
                         </button>
-                        {/* Waveform visualization */}
+
+                        {/* Waveform visuelle */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-                            {Array.from({ length: 18 }).map((_, i) => (
-                                <div key={i} style={{
-                                    width: 2, borderRadius: 1,
-                                    height: 4 + Math.sin(i * 0.8) * 8 + Math.random() * 6,
-                                    background: isMe ? 'rgba(255,255,255,0.70)' : `${T.gold}88`,
-                                    transition: 'height 0.1s',
-                                    animation: playing ? `pulse-${i % 3} 0.5s infinite` : 'none',
-                                }} />
-                            ))}
+                            {Array.from({ length: 22 }).map(function(_, i) {
+                                return (
+                                    <motion.div
+                                        key={i}
+                                        animate={playing
+                                            ? { height: [4, 4 + Math.abs(Math.sin(i * 0.7)) * 14, 4] }
+                                            : { height: 4 + Math.abs(Math.sin(i * 0.9)) * 10 }
+                                        }
+                                        transition={playing
+                                            ? { duration: 0.6, delay: i * 0.04, repeat: Infinity, ease: 'easeInOut' }
+                                            : { duration: 0 }
+                                        }
+                                        style={{
+                                            width: 2, borderRadius: 2,
+                                            background: isMe
+                                                ? 'rgba(255,255,255,0.65)'
+                                                : 'rgba(173,20,87,0.55)',
+                                        }}
+                                    />
+                                );
+                            })}
                         </div>
+
+                        {/* Durée */}
                         <span style={{
-                            fontFamily: "'Playfair Display', sans-serif",
-                            fontSize: 11, color: isMe ? 'rgba(255,255,255,0.80)' : T.textSoft,
-                            flexShrink: 0,
+                            fontFamily: CHAT_FONT,
+                            fontSize: 11,
+                            color: isMe ? 'rgba(255,255,255,0.72)' : T.textMuted,
+                            flexShrink: 0, minWidth: 30,
                         }}>
-              {formatDuration(message.duration || 0)}
-            </span>
+                            {formatDuration(message.duration || 0)}
+                        </span>
+                    </div>
+
+                ) : isSingleEmoji ? (
+                    /* ── Emoji seul — grand, sans bulle ─────────────────── */
+                    <div style={{ padding: '2px 4px' }}>
+                        <p style={{
+                            fontSize: 52,
+                            lineHeight: 1.1,
+                            margin: 0,
+                            userSelect: 'none',
+                        }}>
+                            {message.content}
+                        </p>
                     </div>
                 ) : (
+                    /* ── Bulle texte normale ─────────────────────────────── */
                     <div style={{
-                        padding: '10px 16px',
-                        borderRadius: 20,
-                        borderBottomRightRadius: isMe ? 6 : 20,
-                        borderBottomLeftRadius: isMe ? 20 : 6,
-                        background: isMe
-                            ? `linear-gradient(135deg, ${T.rose}, ${T.roseLight})`
-                            : isDark ? 'rgba(45,16,32,0.90)' : 'rgba(255,255,255,0.95)',
-                        boxShadow: isMe ? `0 4px 16px ${T.rose}44` : T.shadowCard,
-                        maxWidth: '100%',
+                        padding: '11px 16px',
+                        borderRadius: isMe ? myRadius : theirRadius,
+                        background: isMe ? myBg : theirBg,
+                        border: isMe ? 'none' : theirBord,
+                        boxShadow: isMe ? myShadow : theirShadow,
                     }}>
+                        {message.reaction
+                            ? <div style={{
+                                position: 'absolute',
+                                bottom: -10,
+                                right: isMe ? 8 : 'auto',
+                                left: isMe ? 'auto' : 8,
+                                fontSize: 16,
+                                lineHeight: 1,
+                            }}>
+                                {message.reaction}
+                            </div>
+                            : null
+                        }
                         <p style={{
-                            fontFamily: "'Playfair Display', sans-serif",
-                            fontSize: 14, lineHeight: 1.6,
+                            fontFamily: CHAT_FONT,
+                            fontSize: 14,
+                            lineHeight: 1.58,
                             color: isMe ? '#fff' : T.text,
-                            margin: 0, wordBreak: 'break-word',
+                            margin: 0,
+                            wordBreak: 'break-word',
+                            whiteSpace: 'pre-wrap',
                         }}>
                             {message.content}
                         </p>
                     </div>
                 )}
 
-                {/* Meta */}
+                {/* ── Heure + statut lu ───────────────────────────────────── */}
                 <div style={{
                     display: 'flex', alignItems: 'center', gap: 4,
+                    paddingLeft: isMe ? 0 : 2,
+                    paddingRight: isMe ? 2 : 0,
                 }}>
-          <span style={{
-              fontFamily: "'Playfair Display', sans-serif",
-              fontSize: 10, color: T.textMuted,
-          }}>
-            {time}
-          </span>
-                    {isMe && (
-                        <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-                            {message.is_read ? (
-                                <>
-                                    <path d="M1 5l3 3 6-6" stroke={T.gold} strokeWidth="1.3" strokeLinecap="round" />
-                                    <path d="M5 5l3 3 6-6" stroke={T.gold} strokeWidth="1.3" strokeLinecap="round" />
-                                </>
-                            ) : (
-                                <path d="M1 5l3 3 6-6" stroke={T.textMuted} strokeWidth="1.3" strokeLinecap="round" />
-                            )}
-                        </svg>
-                    )}
+                    <span style={{
+                        fontFamily: CHAT_FONT,
+                        fontSize: 10,
+                        color: T.textMuted,
+                    }}>
+                        {time}
+                    </span>
+                    {isMe ? (
+                        message.is_read
+                            ? <CheckCheck size={13} color="#E91E63" strokeWidth={2.5} />
+                            : <Check      size={13} color={T.textMuted} strokeWidth={2.5} />
+                    ) : null}
                 </div>
             </div>
         </motion.div>
     );
 }
 
-// ─── Date separator ───────────────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DATE SEPARATOR
+// ══════════════════════════════════════════════════════════════════════════════
 function DateSeparator({ date, T, isDark }) {
-    const label = (() => {
-        const d = new Date(date);
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-        if (d.toDateString() === today.toDateString()) return "Aujourd'hui";
-        if (d.toDateString() === yesterday.toDateString()) return 'Hier';
-        return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-    })();
+    var d         = new Date(date);
+    var today     = new Date();
+    var yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    var label;
+    if (d.toDateString() === today.toDateString()) {
+        label = "Aujourd'hui";
+    } else if (d.toDateString() === yesterday.toDateString()) {
+        label = 'Hier';
+    } else {
+        label = d.toLocaleDateString('fr-FR', {
+            weekday: 'long', day: 'numeric', month: 'long',
+        });
+        // Capitalize first letter
+        label = label.charAt(0).toUpperCase() + label.slice(1);
+    }
 
     return (
         <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            margin: '16px 0 8px',
+            margin: '22px 0 14px',
         }}>
-            <div style={{ flex: 1, height: 1, background: `${T.gold}22` }} />
-            <span style={{
-                fontFamily: "'Playfair Display', sans-serif",
-                fontSize: 11, color: T.textMuted,
-                whiteSpace: 'nowrap',
-                padding: '3px 10px',
-                background: (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'rgba(30,16,32,0.6)' : 'rgba(240,234,214,0.6)',
-                borderRadius: 20,
+            <div style={{
+                flex: 1, height: 1,
+                background: 'linear-gradient(90deg, transparent, ' + chatBorderColor(isDark) + ')',
+            }} />
+            <div style={{
+                padding: '5px 16px',
+                borderRadius: 50,
+                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                border: '1px solid ' + chatBorderColor(isDark),
             }}>
-        {label}
-      </span>
-            <div style={{ flex: 1, height: 1, background: `${T.gold}22` }} />
+                <span style={{
+                    fontFamily: CHAT_FONT,
+                    fontSize: 11, fontWeight: 500,
+                    color: T.textMuted,
+                    whiteSpace: 'nowrap',
+                }}>
+                    {label}
+                </span>
+            </div>
+            <div style={{
+                flex: 1, height: 1,
+                background: 'linear-gradient(90deg, ' + chatBorderColor(isDark) + ', transparent)',
+            }} />
         </div>
     );
 }
 
 
-// ─── Voice recorder ───────────────────────────────────────────────────────────
-function VoiceRecorder({ onSend, onCancel, T }) {
-    const [duration, setDuration]   = useState(0);
-    const [recording, setRecording] = useState(false);
-    const mediaRecorder = useRef(null);
-    const chunks        = useRef([]);
-    const timer         = useRef(null);
-
-    useEffect(() => {
-        startRecording();
-        return () => {
-            if (timer.current) clearInterval(timer.current);
-            if (mediaRecorder.current?.state === 'recording') {
-                mediaRecorder.current.stop();
-            }
-        };
-    }, []);
-
-    const startRecording = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder.current = new MediaRecorder(stream);
-            chunks.current = [];
-            mediaRecorder.current.ondataavailable = e => chunks.current.push(e.data);
-            mediaRecorder.current.onstop = () => {
-                const blob = new Blob(chunks.current, { type: 'audio/webm' });
-                stream.getTracks().forEach(t => t.stop());
-                onSend(blob, duration);
-            };
-            mediaRecorder.current.start();
-            setRecording(true);
-            timer.current = setInterval(() => setDuration(d => d + 1), 1000);
-        } catch (e) {
-            onCancel();
-        }
-    };
-
-    const stopAndSend = () => {
-        clearInterval(timer.current);
-        setRecording(false);
-        mediaRecorder.current?.stop();
-    };
-
-    const cancel = () => {
-        clearInterval(timer.current);
-        if (mediaRecorder.current?.state === 'recording') {
-            mediaRecorder.current.stop();
-        }
-        onCancel();
-    };
-
-    const m = Math.floor(duration / 60);
-    const s = duration % 60;
-
+// ══════════════════════════════════════════════════════════════════════════════
+//  TYPING INDICATOR
+// ══════════════════════════════════════════════════════════════════════════════
+function TypingIndicator({ avatar, isDark, T }) {
     return (
-        <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            background: `${T.rose}18`,
-            border: `1px solid ${T.rose}33`,
-            borderRadius: 28, padding: '8px 16px',
-            flex: 1,
-        }}>
-            {/* Pulsing mic */}
-            <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 0.8, repeat: Infinity }}
-                style={{
-                    width: 32, height: 32, borderRadius: '50%',
-                    background: T.rose,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-            >
-                <svg width="14" height="18" viewBox="0 0 14 18" fill="none">
-                    <rect x="4" y="1" width="6" height="10" rx="3" fill="#fff" />
-                    <path d="M1 8c0 3.3 2.7 6 6 6s6-2.7 6-6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M7 14v3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-            </motion.div>
-
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, color: T.rose, fontWeight: 600, fontFeatureSettings: '"tnum"' }}>
-        {String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
-      </span>
-
-            {/* Waveform */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
-                {Array.from({ length: 24 }).map((_, i) => (
-                    <motion.div key={i}
-                                animate={{ height: [4, 4 + Math.random() * 16, 4] }}
-                                transition={{ duration: 0.3, repeat: Infinity, delay: i * 0.04 }}
-                                style={{ width: 2, background: `${T.rose}88`, borderRadius: 1 }}
-                    />
-                ))}
+        <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.94 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            style={{
+                display: 'flex', alignItems: 'flex-end', gap: 8,
+                marginTop: 4, marginBottom: 8,
+            }}
+        >
+            {/* Mini avatar */}
+            <div style={{
+                width: 28, height: 28, borderRadius: '50%',
+                overflow: 'hidden', flexShrink: 0,
+                border: '1.5px solid rgba(233,30,99,0.28)',
+                background: CHAT_ROSE_GRADIENT,
+            }}>
+                {avatar
+                    ? <img src={avatar} alt=""
+                           style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : null
+                }
             </div>
 
-            {/* Cancel */}
-            <button onClick={cancel} style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: 'rgba(0,0,0,0.15)', border: 'none',
-                color: T.textSoft, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+            {/* Bulles animées */}
+            <div style={{
+                background: chatSurface(isDark),
+                border: chatBorder(isDark),
+                borderRadius: '4px 20px 20px 20px',
+                padding: '12px 18px',
+                display: 'flex', gap: 6, alignItems: 'center',
+                boxShadow: isDark
+                    ? '0 2px 12px rgba(0,0,0,0.35)'
+                    : '0 2px 10px rgba(0,0,0,0.07)',
             }}>
-                ✕
-            </button>
+                {[0, 1, 2].map(function(i) {
+                    return (
+                        <motion.div
+                            key={i}
+                            animate={{ y: [0, -6, 0], opacity: [0.4, 1, 0.4] }}
+                            transition={{
+                                duration: 0.7,
+                                delay: i * 0.18,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                            }}
+                            style={{
+                                width: 7, height: 7,
+                                borderRadius: '50%',
+                                background: '#E91E63',
+                            }}
+                        />
+                    );
+                })}
+            </div>
+        </motion.div>
+    );
+}
 
-            {/* Send */}
-            <motion.button
-                onClick={stopAndSend}
-                whileTap={{ scale: 0.9 }}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  CHAT EMPTY STATE
+// ══════════════════════════════════════════════════════════════════════════════
+function ChatEmptyState({ name, avatar, isDark, T }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+            style={{
+                flex: 1, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                padding: '32px 24px', gap: 16, textAlign: 'center',
+            }}
+        >
+            {/* Avatar grand */}
+            <div style={{
+                width: 90, height: 90, borderRadius: '50%',
+                overflow: 'hidden',
+                border: '3px solid rgba(233,30,99,0.30)',
+                boxShadow: '0 8px 32px rgba(173,20,87,0.20)',
+                background: CHAT_ROSE_GRADIENT,
+                position: 'relative',
+            }}>
+                {avatar
+                    ? <img src={avatar} alt={name}
+                           style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <div style={{
+                        width: '100%', height: '100%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: CHAT_FONT, fontSize: 36, fontWeight: 700, color: '#fff',
+                    }}>
+                        {name.length > 0 ? name[0].toUpperCase() : '?'}
+                    </div>
+                }
+                {/* Ring animé */}
+                <motion.div
+                    animate={{ scale: [1, 1.12, 1], opacity: [0.6, 0, 0.6] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                    style={{
+                        position: 'absolute', inset: -4,
+                        borderRadius: '50%',
+                        border: '2px solid rgba(233,30,99,0.40)',
+                        pointerEvents: 'none',
+                    }}
+                />
+            </div>
+
+            <div>
+                <p style={{
+                    fontFamily: CHAT_FONT,
+                    fontSize: 18, fontWeight: 600,
+                    color: T.text, margin: '0 0 8px',
+                }}>
+                    Tu as matché avec {name}
+                </p>
+                <p style={{
+                    fontFamily: CHAT_FONT,
+                    fontSize: 14, color: T.textMuted,
+                    margin: 0, lineHeight: 1.6,
+                }}>
+                    Envoie le premier message et brise la glace
+                </p>
+            </div>
+
+            {/* Suggestions de messages */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 8 }}>
+                {['Salut !', 'Hey, comment tu vas ?', 'Tu fais quelle filière ?'].map(function(suggestion) {
+                    return (
+                        <div key={suggestion} style={{
+                            padding: '8px 16px',
+                            borderRadius: 50,
+                            background: isDark
+                                ? 'rgba(233,30,99,0.10)'
+                                : 'rgba(233,30,99,0.07)',
+                            border: '1px solid rgba(233,30,99,0.22)',
+                            fontFamily: CHAT_FONT,
+                            fontSize: 13, color: '#E91E63',
+                            cursor: 'default',
+                        }}>
+                            {suggestion}
+                        </div>
+                    );
+                })}
+            </div>
+        </motion.div>
+    );
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MESSAGE SKELETON (loading)
+// ══════════════════════════════════════════════════════════════════════════════
+function MessageSkeleton({ isMe, isDark }) {
+    var shimmerBg = isDark
+        ? 'linear-gradient(90deg,rgba(255,255,255,0.04),rgba(255,255,255,0.10),rgba(255,255,255,0.04))'
+        : 'linear-gradient(90deg,rgba(0,0,0,0.05),rgba(0,0,0,0.10),rgba(0,0,0,0.05))';
+    var widths = [140, 200, 110, 175, 90];
+    var w = widths[Math.floor(Math.random() * widths.length)];
+
+    return (
+        <div style={{
+            display: 'flex',
+            flexDirection: isMe ? 'row-reverse' : 'row',
+            alignItems: 'flex-end',
+            gap: 8,
+            marginBottom: 6,
+            paddingLeft: isMe ? 56 : 0,
+            paddingRight: isMe ? 0 : 56,
+        }}>
+            {!isMe && (
+                <motion.div
+                    animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                    transition={{ duration: 1.4, repeat: Infinity, ease: 'linear' }}
+                    style={{
+                        width: 28, height: 28, borderRadius: '50%',
+                        background: shimmerBg, backgroundSize: '200%',
+                        flexShrink: 0,
+                    }}
+                />
+            )}
+            <motion.div
+                animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: 'linear' }}
                 style={{
-                    width: 44, height: 44, borderRadius: '50%',
-                    background: T.rose, border: 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: `0 4px 16px ${T.rose}44`,
+                    width: w, height: 40, borderRadius: 16,
+                    background: isMe
+                        ? 'linear-gradient(90deg,rgba(173,20,87,0.15),rgba(233,30,99,0.25),rgba(173,20,87,0.15))'
+                        : shimmerBg,
+                    backgroundSize: '200%',
                 }}
-            >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M2 16L16 9 2 2v5l9 2-9 2v5z" fill="#fff" />
-                </svg>
-            </motion.button>
+            />
         </div>
     );
 }
 
-// ─── Input bar ────────────────────────────────────────────────────────────────
-function MessageInput({ onSend, onVoice, T, isDark }) {
-    const [text, setText]           = useState('');
-    const [recording, setRecording] = useState(false);
-    const [showEmoji, setShowEmoji] = useState(false);
-    const textRef = useRef(null);
 
-    const QUICK_EMOJIS = ['❤️', '😍', '😂', '🙈', '🔥', '✨', '💕', '😊'];
+// ══════════════════════════════════════════════════════════════════════════════
+//  CHAT OPTIONS MENU
+// ══════════════════════════════════════════════════════════════════════════════
+function ChatOptionsMenu({ matchId, onClose, onUnmatch, onDelete, isDark, T }) {
+    var borderClr = chatBorderColor(isDark);
+    var bg = isDark ? 'rgba(18,10,24,0.99)' : '#FFFFFF';
 
-    const handleSend = () => {
-        if (!text.trim()) return;
-        onSend(text.trim());
+    var options = [
+        {
+            Icon: Ban,
+            label: 'Bloquer',
+            sub: 'Cet utilisateur ne pourra plus te contacter',
+            danger: false,
+            fn: function() { onClose(); },
+        },
+        {
+            Icon: AlertTriangle,
+            label: 'Signaler',
+            sub: 'Signaler un comportement inapproprié',
+            danger: false,
+            fn: function() { onClose(); },
+        },
+        {
+            Icon: HeartCrack,
+            label: 'Dématcher',
+            sub: 'La conversation sera supprimée',
+            danger: true,
+            fn: function() {
+                if (onUnmatch) { onUnmatch(); }
+                onClose();
+            },
+        },
+        {
+            Icon: Trash2,
+            label: 'Supprimer la conversation',
+            sub: 'Tous les messages seront effacés',
+            danger: true,
+            fn: function() {
+                if (onDelete) { onDelete(); }
+                onClose();
+            },
+        },
+    ];
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.88, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.88, y: -10 }}
+            transition={SPRING_SNAPPY}
+            style={{
+                position: 'absolute', right: 0, top: 48,
+                zIndex: 600,
+                background: bg,
+                border: '1px solid ' + borderClr,
+                borderRadius: 20,
+                overflow: 'hidden',
+                width: 250,
+                boxShadow: isDark
+                    ? '0 16px 56px rgba(0,0,0,0.70)'
+                    : '0 16px 48px rgba(0,0,0,0.16)',
+            }}
+        >
+            {options.map(function(opt, i) {
+                return (
+                    <button
+                        key={opt.label}
+                        onClick={opt.fn}
+                        style={{
+                            width: '100%',
+                            padding: '14px 18px',
+                            background: 'none',
+                            border: 'none',
+                            borderBottom: i < options.length - 1
+                                ? '1px solid ' + borderClr
+                                : 'none',
+                            display: 'flex',
+                            gap: 14,
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={function(e) {
+                            e.currentTarget.style.background = isDark
+                                ? 'rgba(255,255,255,0.04)'
+                                : 'rgba(0,0,0,0.03)';
+                        }}
+                        onMouseLeave={function(e) {
+                            e.currentTarget.style.background = 'none';
+                        }}
+                    >
+                        {/* Icône dans un cercle */}
+                        <div style={{
+                            width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: opt.danger
+                                ? 'rgba(233,30,99,0.10)'
+                                : isDark
+                                    ? 'rgba(255,255,255,0.07)'
+                                    : 'rgba(0,0,0,0.05)',
+                        }}>
+                            <opt.Icon
+                                size={17} strokeWidth={1.9}
+                                color={opt.danger ? '#E91E63' : T.textSoft}
+                            />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                                fontFamily: CHAT_FONT,
+                                fontSize: 14, fontWeight: 500,
+                                color: opt.danger ? '#E91E63' : T.text,
+                            }}>
+                                {opt.label}
+                            </div>
+                            <div style={{
+                                fontFamily: CHAT_FONT,
+                                fontSize: 11, color: T.textMuted,
+                                marginTop: 2, lineHeight: 1.4,
+                            }}>
+                                {opt.sub}
+                            </div>
+                        </div>
+                    </button>
+                );
+            })}
+        </motion.div>
+    );
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  EMOJI PICKER WRAPPER
+// ══════════════════════════════════════════════════════════════════════════════
+function ChatEmojiPicker({ onSelect, isDark }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 14, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+            style={{
+                position: 'absolute', bottom: '100%',
+                left: 0, right: 0, zIndex: 500,
+                padding: '0 10px 6px',
+            }}
+        >
+            <EmojiPicker
+                onEmojiClick={function(data) { onSelect(data.emoji); }}
+                theme={isDark ? 'dark' : 'light'}
+                emojiStyle="google"
+                searchPlaceholder="Rechercher..."
+                lazyLoadEmojis={true}
+                height={340}
+                width="100%"
+                previewConfig={{ showPreview: false }}
+                skinTonePickerLocation="PREVIEW"
+            />
+        </motion.div>
+    );
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MORPHING INPUT BAR
+//  la barre se contracte en pill puis s'élargit
+// ══════════════════════════════════════════════════════════════════════════════
+function MorphingInputBar({ onSend, onVoice, onTyping, T, isDark, isInitializing }) {
+    var textState   = useState('');
+    var text        = textState[0];
+    var setText     = textState[1];
+
+    var recordingState = useState(false);
+    var recording      = recordingState[0];
+    var setRecording   = recordingState[1];
+
+    var emojiState = useState(false);
+    var showEmoji  = emojiState[0];
+    var setShowEmoji = emojiState[1];
+
+    var focusedState = useState(false);
+    var focused      = focusedState[0];
+    var setFocused   = focusedState[1];
+
+    var textRef    = useRef(null);
+    var wrapperRef = useRef(null);
+
+    // Auto-resize du textarea à chaque frappe
+    useEffect(function() {
+        var el = textRef.current;
+        if (!el) return;
+        el.style.height = 'auto';
+        var maxH = 120;
+        var newH = Math.min(el.scrollHeight, maxH);
+        el.style.height = newH + 'px';
+        el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+    }, [text]);
+    // Fermer emoji si clic dehors
+    useEffect(function() {
+        function handler(e) {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+                setShowEmoji(false);
+            }
+        }
+        if (showEmoji) { document.addEventListener('mousedown', handler); }
+        return function() { document.removeEventListener('mousedown', handler); };
+    }, [showEmoji]);
+
+    function handleSend() {
+        var t = text.trim();
+        if (!t) return;
+        onSend(t);
         setText('');
-        textRef.current?.focus();
-    };
+        setShowEmoji(false);
+        if (textRef.current) { textRef.current.focus(); }
+    }
 
-    const handleKeyDown = (e) => {
+    function handleKey(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
         }
-    };
+    }
 
-    const handleVoiceSend = async (blob, duration) => {
+    function handleChange(e) {
+        setText(e.target.value);
+        if (onTyping) { onTyping(); }
+    }
+
+    async function handleVoiceSend(blob, duration) {
         setRecording(false);
-        const fd = new FormData();
+        var fd = new FormData();
         fd.append('audio', blob, 'voice.webm');
         fd.append('duration', duration);
         await onVoice(fd);
-    };
+    }
+
+    var inputBg = isDark ? 'rgba(255,255,255,0.07)' : '#FFFFFF';
+    var inputBorder = focused
+        ? '1.5px solid #E91E63'
+        : isDark
+            ? '1.5px solid rgba(255,255,255,0.10)'
+            : '1.5px solid rgba(0,0,0,0.09)';
+    var inputGlow = focused ? '0 0 0 3px rgba(233,30,99,0.13)' : 'none';
 
     if (recording) {
         return (
-            <div style={{ padding: '8px 16px 16px', display: 'flex' }}>
-                <VoiceRecorder onSend={handleVoiceSend} onCancel={() => setRecording(false)} T={T} />
-            </div>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{
+                    background: chatInputBg(isDark),
+                    borderTop: '1px solid ' + chatBorderColor(isDark),
+                    padding: '12px 16px 20px',
+                }}
+            >
+                {/* Voice recorder placeholder */}
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '10px 16px',
+                    background: isDark ? 'rgba(233,30,99,0.08)' : 'rgba(233,30,99,0.05)',
+                    borderRadius: 16,
+                    border: '1px solid rgba(233,30,99,0.18)',
+                }}>
+                    <motion.div
+                        animate={{ scale: [1, 1.2, 1], opacity: [1, 0.6, 1] }}
+                        transition={{ duration: 0.8, repeat: Infinity }}
+                        style={{
+                            width: 12, height: 12, borderRadius: '50%',
+                            background: '#E91E63', flexShrink: 0,
+                        }}
+                    />
+                    <span style={{
+                        fontFamily: CHAT_FONT, fontSize: 13,
+                        color: '#E91E63', flex: 1,
+                    }}>
+                        Enregistrement en cours...
+                    </span>
+                    <button
+                        onClick={function() { setRecording(false); }}
+                        style={{
+                            padding: '6px 14px', borderRadius: 20,
+                            background: 'none',
+                            border: '1px solid rgba(233,30,99,0.30)',
+                            color: '#E91E63',
+                            fontFamily: CHAT_FONT, fontSize: 12,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        Annuler
+                    </button>
+                </div>
+            </motion.div>
         );
     }
 
     return (
-        <div style={{ padding: '8px 16px 16px' }}>
-            {/* Quick emojis */}
+        <div ref={wrapperRef} style={{ position: 'relative', flexShrink: 0 }}>
+            {/* Emoji Picker */}
             <AnimatePresence>
                 {showEmoji && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10, height: 0 }}
-                        animate={{ opacity: 1, y: 0, height: 'auto' }}
-                        exit={{ opacity: 0, y: 10, height: 0 }}
-                        style={{
-                            display: 'flex', gap: 8, marginBottom: 8,
-                            overflowX: 'auto', paddingBottom: 4,
+                    <ChatEmojiPicker
+                        onSelect={function(emoji) {
+                            setText(function(prev) { return prev + emoji; });
+                            if (textRef.current) { textRef.current.focus(); }
                         }}
-                    >
-                        {QUICK_EMOJIS.map(e => (
-                            <button key={e} onClick={() => setText(t => t + e)} style={{
-                                fontSize: 22, background: 'none', border: 'none',
-                                cursor: 'pointer', flexShrink: 0,
-                            }}>
-                                {e}
-                            </button>
-                        ))}
-                    </motion.div>
+                        isDark={isDark}
+                    />
                 )}
             </AnimatePresence>
 
-            <div style={{
-                display: 'flex', alignItems: 'flex-end', gap: 10,
-            }}>
-                {/* Emoji toggle */}
-                <button onClick={() => setShowEmoji(e => !e)} style={{
-                    width: 40, height: 40, borderRadius: '50%',
-                    background: showEmoji ? `${T.gold}22` : 'none',
-                    border: `1px solid ${T.gold}33`,
-                    color: T.gold, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0, fontSize: 18,
-                    transition: 'background 0.25s',
-                }}>
-                    😊
-                </button>
+            {/* Barre principale */}
+            <motion.div
+                // ── L'animation morphing ───────────────────────────────────
+                //  isInitializing: la barre part d'une petite pill et s'élargit
+                initial={{ scaleX: 0.14, scaleY: 0.80, y: 20, opacity: 0 }}
+                animate={{ scaleX: 1, scaleY: 1, y: 0, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 24, mass: 1.0 }}
+                style={{ transformOrigin: 'center bottom' }}
+                style={{
+                    background: chatInputBg(isDark),
+                    borderTop: '1px solid ' + chatBorderColor(isDark),
+                    padding: '10px 12px 16px',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                }}
+            >
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
 
-                {/* Text area */}
-                <div style={{
-                    flex: 1, position: 'relative',
-                    background: isDark ? 'rgba(45,16,32,0.80)' : 'rgba(255,255,255,0.90)',
-                    borderRadius: 24,
-                    border: `1px solid ${T.gold}33`,
-                    backdropFilter: 'blur(12px)',
-                    display: 'flex', alignItems: 'flex-end',
-                }}>
-          <textarea
-              ref={textRef}
-              value={text}
-              onChange={e => setText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Un message doux..."
-              rows={1}
-              style={{
-                  flex: 1, padding: '12px 16px',
-                  background: 'none', border: 'none', outline: 'none',
-                  fontFamily: "'Playfair Display', sans-serif",
-                  fontSize: 14, color: T.text,
-                  resize: 'none', maxHeight: 120,
-                  lineHeight: 1.5,
-              }}
-          />
+                    {/* ── Bouton Emoji ─────────────────────────────────────── */}
+                    <motion.button
+                        whileTap={{ scale: 0.88 }}
+                        onClick={function() { setShowEmoji(function(v) { return !v; }); }}
+                        style={{
+                            width: 42, height: 42,
+                            borderRadius: '50%', flexShrink: 0,
+                            background: showEmoji
+                                ? (isDark
+                                    ? 'rgba(233,30,99,0.20)'
+                                    : 'rgba(233,30,99,0.12)')
+                                : (isDark
+                                    ? 'rgba(255,255,255,0.07)'
+                                    : 'rgba(0,0,0,0.05)'),
+                            border: isDark
+                                ? '1.5px solid rgba(255,255,255,0.10)'
+                                : '1.5px solid rgba(0,0,0,0.09)',
+                            cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: showEmoji ? '#E91E63' : T.textMuted,
+                            transition: 'background 0.2s, color 0.2s',
+                        }}
+                    >
+                        <Smile size={20} strokeWidth={1.8} />
+                    </motion.button>
+
+                    {/* ── Zone de texte ────────────────────────────────────── */}
+                    <div style={{
+                        flex: 1,
+                        background: inputBg,
+                        borderRadius: 24,
+                        border: inputBorder,
+                        boxShadow: inputGlow,
+                        transition: 'border 0.2s, box-shadow 0.2s',
+                        display: 'flex', alignItems: 'flex-end',
+                    }}>
+                        <textarea
+                            ref={textRef}
+                            value={text}
+                            onChange={handleChange}
+                            onKeyDown={handleKey}
+                            onFocus={function() { setFocused(true); }}
+                            onBlur={function() { setFocused(false); }}
+                            placeholder="Message..."
+                            rows={1}
+                            style={{
+                                flex: 1,
+                                padding: '11px 16px',
+                                background: 'none',
+                                border: 'none', outline: 'none',
+                                fontFamily: CHAT_FONT,
+                                fontSize: 14, color: T.text,
+                                resize: 'none', maxHeight: 130,
+                                lineHeight: 1.5, boxSizing: 'border-box',
+                                overflowY: 'auto',
+                            }}
+                        />
+                    </div>
+
+                    {/* ── Envoyer / Micro ──────────────────────────────────── */}
+                    <AnimatePresence mode="popLayout" initial={false}>
+                        {text.trim().length > 0 ? (
+                            <motion.button
+                                key="send"
+                                initial={{ scale: 0.5, opacity: 0, rotate: -30 }}
+                                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                                exit={{ scale: 0.5, opacity: 0, rotate: 30 }}
+                                transition={SPRING_SNAPPY}
+                                whileTap={{ scale: 0.85 }}
+                                onClick={handleSend}
+                                style={{
+                                    width: 46, height: 46,
+                                    borderRadius: '50%', flexShrink: 0,
+                                    background: CHAT_ROSE_GRADIENT,
+                                    border: 'none', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: CHAT_ROSE_SHADOW,
+                                }}
+                            >
+                                <Send size={18} color="#fff" strokeWidth={2.3} />
+                            </motion.button>
+                        ) : (
+                            <motion.button
+                                key="mic"
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.5, opacity: 0 }}
+                                transition={SPRING_SNAPPY}
+                                whileTap={{ scale: 0.85 }}
+                                onClick={function() { setRecording(true); }}
+                                style={{
+                                    width: 46, height: 46,
+                                    borderRadius: '50%', flexShrink: 0,
+                                    background: isDark
+                                        ? 'rgba(255,255,255,0.07)'
+                                        : 'rgba(0,0,0,0.05)',
+                                    border: isDark
+                                        ? '1.5px solid rgba(255,255,255,0.10)'
+                                        : '1.5px solid rgba(0,0,0,0.09)',
+                                    cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: T.textMuted,
+                                }}
+                            >
+                                <Mic size={18} strokeWidth={1.8} />
+                            </motion.button>
+                        )}
+                    </AnimatePresence>
                 </div>
-
-                {/* Voice / Send */}
-                {text.trim() ? (
-                    <motion.button
-                        onClick={handleSend}
-                        whileHover={{ scale: 1.08 }}
-                        whileTap={{ scale: 0.92 }}
-                        style={{
-                            width: 46, height: 46, borderRadius: '50%',
-                            background: `linear-gradient(135deg, ${T.rose}, ${T.roseLight})`,
-                            border: 'none',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer', flexShrink: 0,
-                            boxShadow: `0 4px 16px ${T.rose}44`,
-                        }}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                            <path d="M2 16L16 9 2 2v5l9 2-9 2v5z" fill="#fff" />
-                        </svg>
-                    </motion.button>
-                ) : (
-                    <motion.button
-                        onMouseDown={() => setRecording(true)}
-                        whileTap={{ scale: 0.92 }}
-                        style={{
-                            width: 46, height: 46, borderRadius: '50%',
-                            background: isDark ? 'rgba(45,16,32,0.80)' : 'rgba(255,255,255,0.90)',
-                            border: `1px solid ${T.gold}44`,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer', flexShrink: 0,
-                            color: T.textSoft,
-                        }}
-                    >
-                        <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
-                            <rect x="5" y="1" width="6" height="12" rx="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
-                            <path d="M1 10c0 3.9 3.1 7 7 7s7-3.1 7-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                            <path d="M8 17v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                        </svg>
-                    </motion.button>
-                )}
-            </div>
+            </motion.div>
         </div>
     );
 }
 
+
 // ══════════════════════════════════════════════════════════════════════════════
-// CHAT VIEW — Main export
+//  SCROLL TO BOTTOM BUTTON
+// ══════════════════════════════════════════════════════════════════════════════
+function ScrollToBottomBtn({ onClick, isDark, count }) {
+    return (
+        <motion.button
+            initial={{ opacity: 0, scale: 0.7, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.7, y: 20 }}
+            transition={SPRING_SNAPPY}
+            onClick={onClick}
+            style={{
+                position: 'absolute',
+                bottom: 80, right: 16,
+                zIndex: 200,
+                width: 42, height: 42,
+                borderRadius: '50%',
+                background: isDark ? '#1A0D22' : '#FFFFFF',
+                border: '1px solid rgba(233,30,99,0.25)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.20)',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#E91E63',
+            }}
+        >
+            <ChevronDown size={20} strokeWidth={2} />
+            {count > 0 && (
+                <div style={{
+                    position: 'absolute', top: -6, right: -4,
+                    minWidth: 18, height: 18, borderRadius: 10,
+                    background: '#E91E63',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '0 4px',
+                    fontFamily: CHAT_FONT, fontSize: 10,
+                    color: '#fff', fontWeight: 600,
+                }}>
+                    {count > 99 ? '99+' : count}
+                </div>
+            )}
+        </motion.button>
+    );
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  CHAT HEADER
+// ══════════════════════════════════════════════════════════════════════════════
+function ChatHeader({ theirName, theirAvatar, isOnline, typing, onBack, onShowOptions, showOptions, isDark, T }) {
+    var borderClr = chatBorderColor(isDark);
+    var headerBg  = chatHeaderBg(isDark);
+
+    return (
+        <motion.div
+            initial={{ y: -8, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
+            style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '12px 12px',
+                paddingTop: 'max(12px, env(safe-area-inset-top))',
+                background: headerBg,
+                borderBottom: '1px solid ' + borderClr,
+                flexShrink: 0,
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                boxShadow: isDark
+                    ? '0 2px 24px rgba(0,0,0,0.45)'
+                    : '0 2px 16px rgba(0,0,0,0.07)',
+                position: 'relative', zIndex: 100,
+            }}
+        >
+            {/* ── Retour ──────────────────────────────────────────────── */}
+            <motion.button
+                whileTap={{ scale: 0.88, x: -3 }}
+                onClick={onBack}
+                style={{
+                    width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                    background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+                    border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: T.text, transition: 'background 0.2s',
+                }}
+                onMouseEnter={function(e) {
+                    e.currentTarget.style.background = isDark
+                        ? 'rgba(255,255,255,0.13)'
+                        : 'rgba(0,0,0,0.09)';
+                }}
+                onMouseLeave={function(e) {
+                    e.currentTarget.style.background = isDark
+                        ? 'rgba(255,255,255,0.07)'
+                        : 'rgba(0,0,0,0.05)';
+                }}
+            >
+                <ArrowLeft size={20} strokeWidth={2} />
+            </motion.button>
+
+            {/* ── Avatar ──────────────────────────────────────────────── */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+                <motion.div
+                    whileTap={{ scale: 0.93 }}
+                    style={{
+                        width: 46, height: 46, borderRadius: '50%',
+                        overflow: 'hidden',
+                        border: '2px solid rgba(233,30,99,0.32)',
+                        background: CHAT_ROSE_GRADIENT,
+                        cursor: 'pointer',
+                    }}
+                >
+                    {theirAvatar
+                        ? <img src={theirAvatar} alt={theirName}
+                               style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <div style={{
+                            width: '100%', height: '100%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontFamily: CHAT_FONT,
+                            fontSize: 19, fontWeight: 700, color: '#fff',
+                        }}>
+                            {theirName.length > 0 ? theirName[0].toUpperCase() : '?'}
+                        </div>
+                    }
+                </motion.div>
+
+                {/* Point statut en ligne */}
+                <motion.div
+                    animate={{
+                        background: isOnline ? '#4CAF50' : (isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)'),
+                    }}
+                    transition={{ duration: 0.5 }}
+                    style={{
+                        position: 'absolute', bottom: 1, right: 1,
+                        width: 12, height: 12, borderRadius: '50%',
+                        border: '2px solid ' + (isDark ? '#0D0812' : '#F0EBF6'),
+                    }}
+                />
+            </div>
+
+            {/* ── Nom + statut ─────────────────────────────────────────── */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                    fontFamily: CHAT_FONT,
+                    fontSize: 15, fontWeight: 600,
+                    color: T.text,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                    {theirName}
+                </div>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={typing ? 'typing' : (isOnline ? 'online' : 'offline')}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.2 }}
+                        style={{
+                            fontFamily: CHAT_FONT,
+                            fontSize: 11,
+                            color: typing
+                                ? '#E91E63'
+                                : (isOnline ? '#4CAF50' : T.textMuted),
+                        }}
+                    >
+                        {typing
+                            ? 'est en train d\'écrire...'
+                            : (isOnline ? 'En ligne' : 'Hors ligne')
+                        }
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+
+            {/* ── Menu 3 points ────────────────────────────────────────── */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+                <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    onClick={onShowOptions}
+                    style={{
+                        width: 40, height: 40, borderRadius: '50%',
+                        background: showOptions
+                            ? (isDark ? 'rgba(233,30,99,0.15)' : 'rgba(233,30,99,0.09)')
+                            : (isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'),
+                        border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: showOptions ? '#E91E63' : T.textSoft,
+                        transition: 'background 0.2s, color 0.2s',
+                    }}
+                >
+                    <MoreVertical size={20} strokeWidth={1.8} />
+                </motion.button>
+            </div>
+        </motion.div>
+    );
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  ANIMATION INTRO : PHANTOM NAVBAR → MORPHING INPUT
+//  La navbar se contracte en pill et descend hors écran
+//  pendant que la barre de saisie s'élargit
+// ══════════════════════════════════════════════════════════════════════════════
+function NavBarMorphIntro({ isDark, onDone }) {
+    var phaseState = useState(0); // 0=shrink, 1=fall, 2=done
+    var phase      = phaseState[0];
+    var setPhase   = phaseState[1];
+
+    useEffect(function() {
+        // Phase 0→1 : rétrécissement (400ms)
+        var t1 = setTimeout(function() { setPhase(1); }, 480);
+        // Phase 1→2 : chute (280ms) puis done
+        var t2 = setTimeout(function() { setPhase(2); onDone(); }, 740);
+        return function() { clearTimeout(t1); clearTimeout(t2); };
+    }, []);
+
+    if (phase >= 2) { return null; }
+
+    return (
+        <div style={{
+            position: 'absolute',
+            bottom: 0, left: 0, right: 0,
+            zIndex: 2000,
+            display: 'flex', justifyContent: 'center',
+            alignItems: 'flex-end',
+            padding: '0 12px 16px',
+            pointerEvents: 'none',
+        }}>
+            <motion.div
+                animate={phase === 0
+                    ? {
+                        // Phase 0 : rétrécissement de la navbar → pill
+                        width: ['100%', '64px'],
+                        height: [62, 62],
+                        borderRadius: [36, 32],
+                        opacity: [1, 1],
+                        y: [0, 0],
+                    }
+                    : {
+                        // Phase 1 : chute + disparition
+                        y: [0, 80],
+                        opacity: [1, 0],
+                        scale: [1, 0.7],
+                    }
+                }
+                transition={phase === 0
+                    ? { duration: 0.38, ease: [0.4, 0, 0.2, 1] }
+                    : { duration: 0.3, ease: [0.4, 0, 1, 1] }
+                }
+                style={{
+                    background: isDark
+                        ? 'rgba(10,6,12,0.80)'
+                        : 'rgba(255,252,248,0.80)',
+                    backdropFilter: 'blur(24px)',
+                    border: isDark
+                        ? '1px solid rgba(255,255,255,0.10)'
+                        : '1px solid rgba(255,255,255,0.85)',
+                    boxShadow: isDark
+                        ? '0 8px 40px rgba(0,0,0,0.55)'
+                        : '0 8px 32px rgba(26,8,18,0.14)',
+                    overflow: 'hidden',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+            >
+                {/* Petit coeur qui reste visible pendant le rétrécissement */}
+                {phase === 0 && (
+                    <motion.div
+                        animate={{ scale: [1, 0.5], opacity: [1, 0] }}
+                        transition={{ duration: 0.35 }}
+                    >
+                        <Heart size={20} color="#E91E63" fill="#E91E63" />
+                    </motion.div>
+                )}
+            </motion.div>
+        </div>
+    );
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  CHAT VIEW
 // ══════════════════════════════════════════════════════════════════════════════
 function ChatView({ match, onBack, isPremium, onShowPremium }) {
-    const { T, isDark } = useTheme();
+    var themeCtx = useTheme();
+    var T        = themeCtx.T;
+    var isDark   = themeCtx.isDark;
 
-    const [messages, setMessages]   = useState([]);
-    const [loading, setLoading]     = useState(true);
-    const [page, setPage]           = useState(1);
-    const [hasMore, setHasMore]     = useState(true);
-    const [typing, setTyping]       = useState(false);
-    const [isOnline, setIsOnline]   = useState(match?.is_online || false);
-    const [showOptions, setShowOptions] = useState(false);
+    // ── State ─────────────────────────────────────────────────────────────────
+    var messagesState    = useState([]);
+    var messages         = messagesState[0];
+    var setMessages      = messagesState[1];
 
-    const socketRef   = useRef(null);
-    const messagesEnd = useRef(null);
-    const typingTimer = useRef(null);
-    const loadingRef  = useRef(false);
+    var loadingState     = useState(true);
+    var loading          = loadingState[0];
+    var setLoading       = loadingState[1];
 
-    // Load messages
-    const loadMessages = useCallback(async (p = 1) => {
+    var pageState        = useState(1);
+    var page             = pageState[0];
+    var setPage          = pageState[1];
+
+    var hasMoreState     = useState(false);
+    var hasMore          = hasMoreState[0];
+    var setHasMore       = hasMoreState[1];
+
+    var typingState      = useState(false);
+    var typing           = typingState[0];
+    var setTyping        = typingState[1];
+
+    var isOnlineState    = useState(match && match.is_online ? true : false);
+    var isOnline         = isOnlineState[0];
+    var setIsOnline      = isOnlineState[1];
+
+    var showOptionsState = useState(false);
+    var showOptions      = showOptionsState[0];
+    var setShowOptions   = showOptionsState[1];
+
+    // Animation states
+    var slideInState     = useState(false);
+    var slideIn          = slideInState[0];
+    var setSlideIn       = slideInState[1];
+
+    var navMorphDoneState = useState(false);
+    var navMorphDone      = navMorphDoneState[0];
+    var setNavMorphDone   = navMorphDoneState[1];
+
+    var showScrollBtnState = useState(false);
+    var showScrollBtn      = showScrollBtnState[0];
+    var setShowScrollBtn   = showScrollBtnState[1];
+
+    var newMsgCountState = useState(0);
+    var newMsgCount      = newMsgCountState[0];
+    var setNewMsgCount   = newMsgCountState[1];
+
+    // ── Refs ──────────────────────────────────────────────────────────────────
+    var socketRef    = useRef(null);
+    var messagesEnd  = useRef(null);
+    var messagesArea = useRef(null);
+    var typingTimer  = useRef(null);
+    var loadingRef   = useRef(false);
+    var atBottomRef  = useRef(true);
+
+    var convId      = match.conversation_id || match.id;
+    var theirAvatar = match.their_avatar || match.avatar || '';
+    var theirName   = match.their_name   || match.name  || '';
+
+    // ── Animation d'entrée ────────────────────────────────────────────────────
+    useEffect(function() {
+        var t = setTimeout(function() { setSlideIn(true); }, 16);
+        return function() { clearTimeout(t); };
+    }, []);
+
+    // ── Chargement des messages ───────────────────────────────────────────────
+    var loadMessages = useCallback(async function(p) {
         if (loadingRef.current) return;
         loadingRef.current = true;
         try {
-            const data = await messagesAPI.getMessages(match.id, p);
-            const newMsgs = (data.messages || data.results || []).reverse();
+            var data    = await messagesAPI.getMessages(convId, p);
+            messagesAPI.markAsRead(convId).catch(function() {});
+            var newMsgs = (data.messages || data.results || []).reverse();
             if (p === 1) {
                 setMessages(newMsgs);
-                messagesAPI.markAsRead(match.id).catch(() => {});
             } else {
-                setMessages(prev => [...newMsgs, ...prev]);
+                setMessages(function(prev) { return newMsgs.concat(prev); });
             }
-            setHasMore(!!data.previous || newMsgs.length === 30);
+            setHasMore(!!(data.previous) || newMsgs.length === 30);
             setPage(p);
         } catch (e) {
-            console.error(e);
+            console.error('[ChatView] loadMessages error:', e);
         } finally {
             setLoading(false);
             loadingRef.current = false;
         }
-    }, [match.id]);
+    }, [convId]);
 
-    useEffect(() => { loadMessages(1); }, [loadMessages]);
+    useEffect(function() { loadMessages(1); }, [loadMessages]);
 
-    // Scroll to bottom on new message
-    useEffect(() => {
-        if (page === 1) {
-            messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
+    // ── Scroll vers le bas au premier chargement ──────────────────────────────
+    useEffect(function() {
+        if (page === 1 && messagesEnd.current) {
+            messagesEnd.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages, page]);
 
-    // WebSocket
-    useEffect(() => {
-        socketRef.current = new ChatSocket(
-            match.id,
-            (data) => {
-                if (data.type === 'message') {
-                    setMessages(prev => [...prev, data.message]);
-                    setTyping(false);
-                } else if (data.type === 'typing') {
-                    setTyping(true);
-                    clearTimeout(typingTimer.current);
-                    typingTimer.current = setTimeout(() => setTyping(false), 3000);
-                } else if (data.type === 'read') {
-                    setMessages(prev => prev.map(m => ({ ...m, is_read: true })));
-                } else if (data.type === 'online_status') {
-                    setIsOnline(data.is_online);
-                }
-            },
-            () => {}
-        );
-        return () => socketRef.current?.close();
-    }, [match.id]);
+    // ── Détection du scroll (bouton "scroll to bottom") ───────────────────────
+    function handleScroll(e) {
+        var el = e.currentTarget;
+        var distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        atBottomRef.current = distFromBottom < 80;
+        setShowScrollBtn(distFromBottom > 200);
+        if (atBottomRef.current) { setNewMsgCount(0); }
+    }
 
-    // Send text message
-    const handleSend = async (content) => {
-        const tempMsg = {
-            id: `temp-${Date.now()}`,
-            content, type: 'text',
-            is_me: true, is_read: false,
+    function scrollToBottom() {
+        if (messagesEnd.current) {
+            messagesEnd.current.scrollIntoView({ behavior: 'smooth' });
+        }
+        setNewMsgCount(0);
+    }
+
+    // ── WebSocket ─────────────────────────────────────────────────────────────
+    useEffect(function() {
+        socketRef.current = new ChatSocket(convId, function(data) {
+            if (data.type === 'message') {
+                if (!data.message || !data.message.id) { return; }
+                setMessages(function(prev) { return prev.concat([data.message]); });
+                setTyping(false);
+                if (!atBottomRef.current) {
+                    setNewMsgCount(function(n) { return n + 1; });
+                } else {
+                    setTimeout(function() {
+                        if (messagesEnd.current) {
+                            messagesEnd.current.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }, 50);
+                }
+            } else if (data.type === 'typing') {
+                setTyping(true);
+                clearTimeout(typingTimer.current);
+                typingTimer.current = setTimeout(function() { setTyping(false); }, 3000);
+            } else if (data.type === 'read') {
+                setMessages(function(prev) {
+                    return prev.filter(function(m) { return m && m.id; }).map(function(m) {
+                        return Object.assign({}, m, { is_read: true });
+                    });
+                });
+            } else if (data.type === 'online_status') {
+                setIsOnline(data.is_online);
+            }
+        }, function() {});
+
+        return function() {
+            if (socketRef.current) { socketRef.current.close(); }
+            clearTimeout(typingTimer.current);
+        };
+    }, [convId]);
+
+    // ── Envoi de message texte ─────────────────────────────────────────────────
+    async function handleSend(content) {
+        var tempMsg = {
+            id: 'temp-' + Date.now(),
+            content: content,
+            type: 'text',
+            is_me: true,
+            is_read: false,
             created_at: new Date().toISOString(),
         };
-        setMessages(prev => [...prev, tempMsg]);
-
+        setMessages(function(prev) { return prev.concat([tempMsg]); });
+        setTimeout(function() {
+            if (messagesEnd.current) {
+                messagesEnd.current.scrollIntoView({ behavior: 'smooth' });
+            }
+        }, 30);
         try {
-            const sent = await messagesAPI.sendMessage(match.id, content);
-            setMessages(prev => prev.map(m => m.id === tempMsg.id ? sent : m));
+            var sent = await messagesAPI.sendMessage(convId, content);
+            if (sent && sent.id) {
+                setMessages(function(prev) {
+                    return prev.map(function(m) {
+                        return m.id === tempMsg.id ? sent : m;
+                    });
+                });
+            }
         } catch (e) {
-            setMessages(prev => prev.filter(m => m.id !== tempMsg.id));
+            console.error('[ChatView] sendMessage error:', e);
+            setMessages(function(prev) {
+                return prev.filter(function(m) { return m.id !== tempMsg.id; });
+            });
         }
-    };
+    }
 
-    // Send voice message
-    const handleVoice = async (formData) => {
-        if (!isPremium) { onShowPremium?.('video_call'); return; }
+    // ── Envoi message vocal ────────────────────────────────────────────────────
+    async function handleVoice(formData) {
+        if (!isPremium) {
+            if (onShowPremium) { onShowPremium('voice'); }
+            return;
+        }
         try {
-            const sent = await messagesAPI.sendVoiceMessage(match.id, formData);
-            setMessages(prev => [...prev, sent]);
+            var sent = await messagesAPI.sendVoiceMessage(match.id, formData);
+            setMessages(function(prev) { return prev.concat([sent]); });
         } catch (e) {
-            console.error(e);
+            console.error('[ChatView] sendVoiceMessage error:', e);
         }
-    };
+    }
 
-    // Typing indicator emit
-    const handleTyping = () => {
-        socketRef.current?.send({ type: 'typing' });
-    };
+    // ── Indicateur de frappe ───────────────────────────────────────────────────
+    function handleTyping() {
+        if (socketRef.current) { socketRef.current.send({ type: 'typing' }); }
+    }
 
-    // Group messages by date
-    const grouped = [];
+    // ── Retour avec animation ──────────────────────────────────────────────────
+    function handleBack() {
+        setSlideIn(false);
+        setTimeout(function() { onBack(); }, 330);
+    }
+
+    // ── Grouper les messages par date ──────────────────────────────────────────
+    var grouped  = [];
     let lastDate = null;
-    messages.forEach((msg, i) => {
+    const safeMessages = messages.filter(function (m) {
+        return m && m.created_at;
+    });
+    safeMessages.forEach(function(msg, i) {
         const msgDate = new Date(msg.created_at).toDateString();
         if (msgDate !== lastDate) {
-            grouped.push({ type: 'separator', date: msg.created_at });
+            grouped.push({ type: 'separator', date: msg.created_at, key: 'sep-' + i });
             lastDate = msgDate;
         }
-        const prev = messages[i - 1];
-        const showAvatar = !msg.is_me && (!prev || prev.is_me || new Date(msg.created_at) - new Date(prev.created_at) > 120000);
-        grouped.push({ type: 'message', msg, showAvatar });
+        var prev       = safeMessages[i - 1];
+        var showAvatar = !msg.is_me && (
+            !prev ||
+            prev.is_me ||
+            (new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime()) > 120000
+        );
+        grouped.push({ type: 'message', msg: msg, showAvatar: showAvatar, key: 'msg-' + msg.id });
     });
+
+    var isEmpty = !loading && messages.length === 0;
 
     return (
         <div style={{
-            display: 'flex', flexDirection: 'column',
-            height: '100%',
-            background: isDark
-                ? 'linear-gradient(180deg, #0F0810 0%, #160B18 100%)'
-                : 'linear-gradient(180deg, #FDF6F0 0%, #F5EDE5 100%)',
+            // ── COUVRE TOUT — y compris la navbar (z-index 1000) ──
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1050,
+            display: 'flex',
+            flexDirection: 'column',
+            background: chatBg(isDark),
+            // ── Slide depuis la droite ──
+            transform: slideIn ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
+            willChange: 'transform',
+            overflow: 'hidden',
         }}>
-            {/* Header */}
-            <div style={{
-                display: 'flex', alignItems: 'center', gap: 14,
-                padding: '12px 16px',
-                background: isDark ? 'rgba(15,8,16,0.90)' : 'rgba(253,246,240,0.90)',
-                backdropFilter: 'blur(20px)',
-                borderBottom: `1px solid ${T.gold}22`,
-                flexShrink: 0,
-            }}>
-                {/* Back */}
-                <button onClick={onBack} style={{
-                    background: 'none', border: 'none',
-                    cursor: 'pointer', padding: 4,
-                    color: T.textSoft,
-                }}>
-                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                        <path d="M14 4l-7 7 7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                </button>
 
-                {/* Avatar */}
-                <div style={{ position: 'relative' }}>
-                    <div style={{
-                        width: 44, height: 44, borderRadius: '50%',
-                        overflow: 'hidden',
-                        border: `2px solid ${T.gold}55`,
-                    }}>
-                        <img
-                            src={match.their_avatar || match.avatar}
-                            alt={match.their_name}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                    </div>
-                    {/* Online dot */}
-                    <div style={{
-                        position: 'absolute', bottom: 0, right: 0,
-                        width: 12, height: 12, borderRadius: '50%',
-                        background: isOnline ? '#4CAF50' : T.textMuted + '66',
-                        border: `2px solid ${isDark ? '#0F0810' : '#FDF6F0'}`,
-                    }} />
-                </div>
+            {/* ── Animation intro : navbar → pill → disparition ────────── */}
+            <AnimatePresence>
+                {!navMorphDone && (
+                    <NavBarMorphIntro
+                        isDark={isDark}
+                        onDone={function() { setNavMorphDone(true); }}
+                    />
+                )}
+            </AnimatePresence>
 
-                {/* Name & status */}
-                <div style={{ flex: 1 }}>
-                    <div style={{
-                        fontFamily: "'Playfair Display', serif",
-                        fontSize: 17, fontWeight: 700, color: T.text,
-                    }}>
-                        {match.their_name || match.name}
-                    </div>
-                    <div style={{
-                        fontFamily: "'Playfair Display', sans-serif",
-                        fontSize: 11, color: isOnline ? '#4CAF50' : T.textMuted,
-                    }}>
-                        {typing ? (
-                            <span style={{ fontStyle: 'italic' }}>est en train d'écrire...</span>
-                        ) : isOnline ? 'En ligne maintenant' : 'Hors ligne'}
-                    </div>
-                </div>
+            {/* ── HEADER ───────────────────────────────────────────────── */}
+            <div style={{ position: 'relative', zIndex: 200 }}>
+                <ChatHeader
+                    theirName={theirName}
+                    theirAvatar={theirAvatar}
+                    isOnline={isOnline}
+                    typing={typing}
+                    onBack={handleBack}
+                    onShowOptions={function() {
+                        setShowOptions(function(v) { return !v; });
+                    }}
+                    showOptions={showOptions}
+                    isDark={isDark}
+                    T={T}
+                />
 
-                {/* Options */}
-                <div style={{ position: 'relative' }}>
-                    <button onClick={() => setShowOptions(o => !o)} style={{
-                        background: 'none', border: 'none',
-                        cursor: 'pointer', padding: 4, color: T.textSoft,
-                    }}>
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <circle cx="10" cy="4" r="1.5" fill="currentColor" />
-                            <circle cx="10" cy="10" r="1.5" fill="currentColor" />
-                            <circle cx="10" cy="16" r="1.5" fill="currentColor" />
-                        </svg>
-                    </button>
-
+                {/* Menu Options */}
+                <div style={{ position: 'absolute', top: 0, right: 0, padding: '0 12px' }}>
                     <AnimatePresence>
                         {showOptions && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9, y: -8 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                style={{
-                                    position: 'absolute', right: 0, top: 32,
-                                    background: isDark ? 'rgba(30,16,32,0.96)' : 'rgba(253,246,240,0.98)',
-                                    backdropFilter: 'blur(16px)',
-                                    border: `1px solid ${T.gold}22`,
-                                    borderRadius: 16, overflow: 'hidden',
-                                    boxShadow: T.shadowDeep, zIndex: 100, width: 200,
-                                }}
-                            >
-                                {[
-                                    { icon: '🚫', label: 'Bloquer', action: () => {} },
-                                    { icon: '⚠️', label: 'Signaler', action: () => {} },
-                                    { icon: '💔', label: 'Dématcher', action: () => messagesAPI.unmatch(match.id) },
-                                    { icon: '🗑️', label: 'Supprimer la conv.', action: () => messagesAPI.deleteConversation(match.id) },
-                                ].map(opt => (
-                                    <button key={opt.label} onClick={() => { opt.action(); setShowOptions(false); }} style={{
-                                        width: '100%', padding: '12px 16px',
-                                        background: 'none', border: 'none',
-                                        display: 'flex', gap: 10, alignItems: 'center',
-                                        fontFamily: "'Playfair Display', sans-serif",
-                                        fontSize: 14, color: opt.label === 'Dématcher' ? T.rose : T.text,
-                                        cursor: 'pointer', textAlign: 'left',
-                                        borderBottom: `1px solid ${T.gold}11`,
-                                        transition: 'background 0.2s',
-                                    }}
-                                            onMouseEnter={e => e.currentTarget.style.background = `${T.gold}11`}
-                                            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                                    >
-                                        <span>{opt.icon}</span>
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </motion.div>
+                            <ChatOptionsMenu
+                                matchId={match.id}
+                                onClose={function() { setShowOptions(false); }}
+                                onUnmatch={function() { messagesAPI.unmatch(match.id); }}
+                                onDelete={function() { messagesAPI.deleteConversation(match.id); }}
+                                isDark={isDark}
+                                T={T}
+                            />
                         )}
                     </AnimatePresence>
                 </div>
             </div>
 
-            {/* Messages */}
-            <div style={{
-                flex: 1, overflowY: 'auto',
-                padding: '12px 16px',
-                display: 'flex', flexDirection: 'column',
-            }}>
-                {/* Load more */}
+            {/* ── MESSAGES ─────────────────────────────────────────────── */}
+            <div
+                ref={messagesArea}
+                onScroll={handleScroll}
+                style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    padding: '12px 14px 8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    WebkitOverflowScrolling: 'touch',
+                    position: 'relative',
+                }}
+            >
+                {/* Voir plus de messages */}
                 {hasMore && !loading && (
-                    <button onClick={() => loadMessages(page + 1)} style={{
-                        alignSelf: 'center',
-                        background: 'none',
-                        border: `1px solid ${T.gold}33`,
-                        color: T.textSoft,
-                        padding: '6px 16px', borderRadius: 20,
-                        fontFamily: "'Playfair Display', sans-serif",
-                        fontSize: 11, cursor: 'pointer', marginBottom: 8,
-                    }}>
+                    <motion.button
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        onClick={function() { loadMessages(page + 1); }}
+                        style={{
+                            alignSelf: 'center', marginBottom: 14,
+                            background: 'none',
+                            border: '1px solid ' + chatBorderColor(isDark),
+                            color: T.textSoft,
+                            padding: '6px 22px', borderRadius: 50,
+                            fontFamily: CHAT_FONT,
+                            fontSize: 12, cursor: 'pointer',
+                            transition: 'background 0.2s',
+                        }}
+                        onMouseEnter={function(e) {
+                            e.currentTarget.style.background = isDark
+                                ? 'rgba(255,255,255,0.05)'
+                                : 'rgba(0,0,0,0.04)';
+                        }}
+                        onMouseLeave={function(e) {
+                            e.currentTarget.style.background = 'none';
+                        }}
+                    >
                         Voir les messages précédents
-                    </button>
+                    </motion.button>
                 )}
 
-                {loading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-                            style={{ width: 32, height: 32, borderRadius: '50%', border: `2.5px solid ${T.gold}22`, borderTopColor: T.gold }}
-                        />
-                    </div>
-                ) : (
-                    grouped.map((item, i) => (
-                        item.type === 'separator'
-                            ? <DateSeparator key={`sep-${i}`} date={item.date} T={T} isDark={isDark} />
-                            : <MessageBubble
-                                key={item.msg.id}
-                                message={item.msg}
-                                isMe={item.msg.is_me}
-                                showAvatar={item.showAvatar}
-                                avatar={match.their_avatar || match.avatar}
-                                T={T}
-                                isDark={isDark}
-                            />
-                    ))
+                {/* Skeleton loading */}
+                {loading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0' }}
+                    >
+                        {[false, true, false, false, true, false, true].map(function(isMe, i) {
+                            return <MessageSkeleton key={i} isMe={isMe} isDark={isDark} />;
+                        })}
+                    </motion.div>
                 )}
 
-                {/* Typing indicator */}
+                {/* État vide */}
+                {isEmpty && (
+                    <ChatEmptyState
+                        name={theirName}
+                        avatar={theirAvatar}
+                        isDark={isDark}
+                        T={T}
+                    />
+                )}
+
+                {/* Messages */}
+                {!loading && (
+                    <AnimatePresence initial={false}>
+                        {grouped.map(function(item) {
+                            if (item.type === 'separator') {
+                                return (
+                                    <DateSeparator
+                                        key={item.key}
+                                        date={item.date}
+                                        T={T}
+                                        isDark={isDark}
+                                    />
+                                );
+                            }
+                            return (
+                                <MessageBubble
+                                    key={item.key}
+                                    message={item.msg}
+                                    isMe={item.msg.is_me}
+                                    showAvatar={item.showAvatar}
+                                    avatar={theirAvatar}
+                                    T={T}
+                                    isDark={isDark}
+                                />
+                            );
+                        })}
+                    </AnimatePresence>
+                )}
+
+                {/* Indicateur de frappe */}
                 <AnimatePresence>
                     {typing && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: 6,
-                                marginBottom: 8,
-                            }}
-                        >
-                            <div style={{
-                                width: 28, height: 28, borderRadius: '50%',
-                                overflow: 'hidden', border: `1.5px solid ${T.gold}44`,
-                            }}>
-                                <img src={match.their_avatar || match.avatar} alt=""
-                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                            <div style={{
-                                background: isDark ? 'rgba(45,16,32,0.90)' : 'rgba(255,255,255,0.95)',
-                                borderRadius: '16px 16px 16px 4px',
-                                padding: '10px 16px',
-                                display: 'flex', gap: 4, alignItems: 'center',
-                            }}>
-                                {[0, 1, 2].map(i => (
-                                    <motion.div key={i}
-                                                animate={{ y: [0, -4, 0] }}
-                                                transition={{ duration: 0.6, delay: i * 0.15, repeat: Infinity }}
-                                                style={{ width: 6, height: 6, borderRadius: '50%', background: T.textMuted }}
-                                    />
-                                ))}
-                            </div>
-                        </motion.div>
+                        <TypingIndicator
+                            avatar={theirAvatar}
+                            isDark={isDark}
+                            T={T}
+                        />
                     )}
                 </AnimatePresence>
 
-                <div ref={messagesEnd} />
+                <div ref={messagesEnd} style={{ height: 8 }} />
             </div>
 
-            {/* Input */}
-            <div style={{
-                background: isDark ? 'rgba(15,8,16,0.90)' : 'rgba(253,246,240,0.90)',
-                backdropFilter: 'blur(20px)',
-                borderTop: `1px solid ${T.gold}22`,
-                flexShrink: 0,
-            }}>
-                <MessageInput onSend={handleSend} onVoice={handleVoice} T={T} isDark={isDark} />
-            </div>
+            {/* Bouton scroll to bottom */}
+            <AnimatePresence>
+                {showScrollBtn && (
+                    <div style={{ position: 'absolute', bottom: 80, right: 16, zIndex: 300 }}>
+                        <ScrollToBottomBtn
+                            onClick={scrollToBottom}
+                            isDark={isDark}
+                            count={newMsgCount}
+                        />
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* ── INPUT BAR avec animation morphing ────────────────────── */}
+            {navMorphDone && (
+                <MorphingInputBar
+                    onSend={handleSend}
+                    onVoice={handleVoice}
+                    onTyping={handleTyping}
+                    T={T}
+                    isDark={isDark}
+                />
+            )}
+            {!navMorphDone && <div style={{ height: 82, flexShrink: 0 }} />}
+
+
+            {/* Fermer les options si clic ailleurs */}
+            {showOptions && (
+                <div
+                    onClick={function() { setShowOptions(false); }}
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 150,
+                    }}
+                />
+            )}
+
+            <style>{`
+                @keyframes llspin {
+                    from { transform: rotate(0deg); }
+                    to   { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 }
-
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MESSAGESTAB
@@ -5142,7 +6043,9 @@ function MessagesTab({ isPremium, initialMatchId }) {
     const [showPremium, setShowPremium]     = useState(false);
     const [search, setSearch]               = useState('');
     const [searchFocused, setSearchFocused] = useState(false);
-    const notifSocket = useRef(null);
+    const notifSocketRef  = useRef(null);
+
+
 
     const loadData = async () => {
         setLoading(true);
@@ -5151,8 +6054,17 @@ function MessagesTab({ isPremium, initialMatchId }) {
                 messagesAPI.getMatches(),
                 messagesAPI.getConversations(),
             ]);
-            setMatches(matchData.matches || matchData || []);
-            setConversations(convData.conversations || convData || []);
+            const normaliseMatch = (m) => ({
+                ...m,
+                their_name:   m.other_first_name || m.their_name || '',
+                their_avatar: m.other_photo
+                    ? (m.other_photo.startsWith('http') ? m.other_photo : `http://localhost:8000${m.other_photo}`)
+                    : null,
+                has_conversation: m.conversation_id != null,
+            });
+
+            setMatches((matchData.matches || matchData || []).map(normaliseMatch));
+            setConversations((convData.conversations || convData || []).map(normaliseMatch));
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
@@ -5168,24 +6080,29 @@ function MessagesTab({ isPremium, initialMatchId }) {
     }, [initialMatchId, loading, conversations, matches]);
 
     useEffect(() => {
-        notifSocket.current = new NotificationSocket({
+        notifSocketRef.current = new NotificationSocket({
             onNotification: (event) => {
                 if (event.type === 'new_message') {
                     setConversations(prev => prev.map(c =>
                         c.id === event.match_id
-                            ? { ...c, last_message: event.message, unread_count: (c.unread_count||0)+1 }
+                            ? { ...c, last_message: event.message, unread_count: (c.unread_count || 0) + 1 }
                             : c
-                    ).sort((a,b) => new Date(b.last_message?.created_at||0) - new Date(a.last_message?.created_at||0)));
+                    ).sort((a, b) => {
+                        var aTime = a.last_message && a.last_message.created_at ? new Date(a.last_message.created_at) : 0;
+                        var bTime = b.last_message && b.last_message.created_at ? new Date(b.last_message.created_at) : 0;
+                        return bTime - aTime;
+                    }));
                 } else if (event.type === 'new_match') {
                     setMatches(prev => [event.match, ...prev]);
                 }
             },
             onBadgeUpdate: () => {},
         });
-        notifSocket.current.connect();
-        return () => notifSocket.current?.disconnect();
+        notifSocketRef.current.connect();
+        return () => {
+            if (notifSocketRef.current) { notifSocketRef.current.disconnect(); }
+        };
     }, []);
-
     if (activeChat) {
         return (
             <ChatView
@@ -5468,7 +6385,7 @@ function MessagesTab({ isPremium, initialMatchId }) {
 // PROFILETAB
 // ══════════════════════════════════════════════════════════════════════════════
 /* ═══════════════════════════════════════════════════════════════
-   LoveLine — Profile Tab (COMPLETE)
+   Profile Tab (COMPLETE)
    Profile editing, photos, verification, settings, notifications
    ═══════════════════════════════════════════════════════════════ */
 
@@ -5754,7 +6671,7 @@ function PhotoGrid({ photos, onUpload, onDelete, onSetMain, T, isDark }) {
                         >
                             {photo ? (
                                 <>
-                                    <img src={photo.url} alt=""
+                                    <img src={photoUrl(photo.url) || photo.url} alt=""
                                          style={{ width:'100%', height:'100%', objectFit:'cover' }} />
 
                                     {/* Badge principale */}
@@ -5991,16 +6908,15 @@ function ProfileTab({ onNavigateAccount, isPremium, onToggleTheme, isDark: _isDa
         Promise.all([
             profileAPI.getMe(),
             profileAPI.getVerificationStatus(),
-            subscriptionAPI.getStatus(),
+            Promise.resolve(null),
         ]).then(([p, v, s]) => {
-
-            setProfile(p => ({
-                ...p,
-                age: calcAge(p.birthday),
-                interests: p.interests?.map(i => typeof i === 'object' ? i.name : i) || [],
-            }));
+            setProfile({
+            ...p,
+            age: calcAge(p.birthday),
+            interests: p.interests?.map(i => typeof i === 'object' ? i.name : i) || [],
+        });
             setBio(p.bio || '');
-            setInterests(p.interests || []);
+            setInterests(p.interests?.map(i => typeof i === 'object' ? i.name : i) || []);
             setHiddenFaculties(p.hidden_faculties || []);
             setDiscovery(p.discovery_settings || {});
             setNotifications(p.notification_preferences || {
@@ -6146,7 +7062,11 @@ function ProfileTab({ onNavigateAccount, isPremium, onToggleTheme, isDark: _isDa
                             boxShadow:'0 4px 20px rgba(0,0,0,0.25)',
                         }}>
                             <img
-                                src={profile?.photos?.find(p => p.is_main)?.url || profile?.photo || profile?.avatar || 'https://via.placeholder.com/88'}
+                                src={
+                                    getMainPhoto(profile)
+                                    || profile?.avatar
+                                    || 'https://via.placeholder.com/88'
+                                }
                                 alt="Profile"
                                 style={{ width:'100%', height:'100%', objectFit:'cover' }}
                             />
@@ -6819,7 +7739,7 @@ function ProfileTab({ onNavigateAccount, isPremium, onToggleTheme, isDark: _isDa
 // ACCOUNTTAB
 // ══════════════════════════════════════════════════════════════════════════════
 /* ═══════════════════════════════════════════════════════════════
-   LoveLine — Account & Security Tab
+    Account & Security Tab
    Password, email, logout, delete account
    ═══════════════════════════════════════════════════════════════ */
 
@@ -7247,13 +8167,13 @@ function AccountTab({ onBack, onLogout, T: _T, isDark: _isDark }) {
 // LIQUIDGLASSNAV
 // ══════════════════════════════════════════════════════════════════════════════
 /* ═══════════════════════════════════════════════════════════════
-   LoveLine — Liquid Glass Navigation
+  Liquid Glass Navigation
    Ultra-realistic Apple liquid glass — transparent as a water drop
    Water-stretch morphing between tabs + text distortion
    ═══════════════════════════════════════════════════════════════ */
 
 // ══════════════════════════════════════════════════════════════════════════════
-// LIQUID GLASS NAV — SVG Displacement Filter (vrai effet verre)
+// LIQUID GLASS NAV — SVG Displacement Filter
 // ══════════════════════════════════════════════════════════════════════════════
 
 const TABS = [
@@ -7335,7 +8255,7 @@ function LiquidGlassNav({ activeTab, onTabChange, badges = {}, userAvatar }) {
                         position: 'relative',
                         borderRadius: 36,
                         overflow: 'hidden',
-                        // Le vrai effet verre : backdrop-filter avec le SVG filter
+                        // backdrop-filter avec le SVG filter
                         backdropFilter: `url(#${filterId}) saturate(1.4) blur(1px)`,
                         WebkitBackdropFilter: `url(#${filterId}) saturate(1.4)`,
                         // Fond semi-transparent très léger
@@ -7528,10 +8448,10 @@ function LiquidGlassNav({ activeTab, onTabChange, badges = {}, userAvatar }) {
 
 
 // ══════════════════════════════════════════════════════════════════════════════
-// DASHBOARD PRINCIPAL (orchestrateur)
+// DASHBOARD PRINCIPAL
 // ══════════════════════════════════════════════════════════════════════════════
 /* ═══════════════════════════════════════════════════════════════════════════════
-   LoveLine — Dashboard.jsx
+   Dashboard.jsx
    Master orchestrator: routing, theme, notifications, tab management
    Structure: ThemeProvider > DashboardShell > [Tabs] + LiquidGlassNav
 
@@ -7593,74 +8513,80 @@ function TabLoader({ T }) {
 }
 
 // ─── In-app toast notifications ───────────────────────────────────────────────
-function ToastNotif({ notif, onDismiss, T, isDark }) {
+function ToastNotif({ notif, onDismiss, onTap, T, isDark }) {
     useEffect(() => {
         const t = setTimeout(onDismiss, 4500);
         return () => clearTimeout(t);
     }, [onDismiss]);
 
-    const icons = {
-        match:    '💕',
-        message:  '💬',
-        super_like: '⭐',
-        like:     '❤️',
-        boost:    '⚡',
-        default:  '🔔',
+    const iconMap = {
+        match:      { Icon: Heart,          color: '#E91E63', bg: 'rgba(233,30,99,0.12)' },
+        new_message:{ Icon: MessageCircle,  color: '#E91E63', bg: 'rgba(233,30,99,0.12)' },
+        super_like: { Icon: Star,           color: '#F2C94C', bg: 'rgba(242,201,76,0.12)' },
+        like:       { Icon: Heart,          color: '#F2C94C', bg: 'rgba(242,201,76,0.12)' },
+        default:    { Icon: Bell,           color: T.textSoft, bg: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' },
     };
+    const { Icon, color, bg } = iconMap[notif.type] || iconMap.default;
 
     return (
         <motion.div
             initial={{ opacity: 0, y: -60, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0,  scale: 1 }}
-            exit={{ opacity: 0, y: -40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0,   scale: 1    }}
+            exit={{    opacity: 0, y: -40,  scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            onClick={onDismiss}
+            onClick={onTap || onDismiss}
             style={{
-                position: 'fixed', top: 'max(16px, env(safe-area-inset-top))',
-                left: 16, right: 16, zIndex: 9500,
+                position: 'fixed',
+                top: 'max(16px, env(safe-area-inset-top))',
+                left: 16, right: 16,
+                zIndex: 9500,
                 background: isDark
-                    ? 'rgba(22, 11, 24, 0.95)'
-                    : 'rgba(253, 246, 240, 0.97)',
-                backdropFilter: 'blur(24px) saturate(200%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(200%)',
-                border: `1px solid ${T.gold}33`,
+                    ? 'rgba(22,11,24,0.96)'
+                    : 'rgba(255,255,255,0.97)',
+                backdropFilter: 'blur(24px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                border: '1px solid ' + (isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.07)'),
                 borderRadius: 20,
                 padding: '14px 16px',
                 display: 'flex', alignItems: 'center', gap: 12,
-                boxShadow: `0 8px 40px rgba(0,0,0,0.18), 0 0 0 0.5px ${T.gold}22`,
+                boxShadow: isDark
+                    ? '0 8px 40px rgba(0,0,0,0.55)'
+                    : '0 8px 32px rgba(0,0,0,0.12)',
                 cursor: 'pointer',
+                overflow: 'hidden',
             }}
         >
-            {/* Avatar or icon */}
+            {/* Avatar ou icône */}
             {notif.avatar ? (
                 <div style={{
-                    width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-                    border: `2px solid ${T.gold}`,
-                    overflow: 'hidden',
+                    width: 44, height: 44, borderRadius: '50%',
+                    overflow: 'hidden', flexShrink: 0,
+                    border: '2px solid rgba(233,30,99,0.30)',
                 }}>
-                    <img src={notif.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={notif.avatar} alt=""
+                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
             ) : (
                 <div style={{
-                    width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-                    background: `${T.gold}18`,
+                    width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                    background: bg,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 22,
                 }}>
-                    {icons[notif.type] || icons.default}
+                    <Icon size={20} color={color} strokeWidth={1.8} />
                 </div>
             )}
 
+            {/* Texte */}
             <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
-                    fontFamily: "'Playfair Display', sans-serif",
-                    fontSize: 13, fontWeight: 700, color: T.text,
+                    fontFamily: "'Poppins', sans-serif",
+                    fontSize: 13, fontWeight: 600, color: T.text,
                     marginBottom: 2,
                 }}>
                     {notif.title || 'Nouvelle notification'}
                 </div>
                 <div style={{
-                    fontFamily: "'Playfair Display', sans-serif",
+                    fontFamily: "'Poppins', sans-serif",
                     fontSize: 12, color: T.textSoft,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
@@ -7668,14 +8594,28 @@ function ToastNotif({ notif, onDismiss, T, isDark }) {
                 </div>
             </div>
 
-            {/* Progress bar */}
+            {/* Bouton fermer */}
+            <button
+                onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+                style={{
+                    width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                    background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+                    border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: T.textMuted,
+                }}
+            >
+                <X size={14} strokeWidth={2} />
+            </button>
+
+            {/* Barre de progression */}
             <motion.div
                 initial={{ scaleX: 1 }}
                 animate={{ scaleX: 0 }}
                 transition={{ duration: 4.5, ease: 'linear' }}
                 style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0, height: 2,
-                    background: `linear-gradient(90deg, ${T.gold}, ${T.rose})`,
+                    background: 'linear-gradient(90deg, #AD1457, #E91E63)',
                     borderRadius: '0 0 20px 20px',
                     transformOrigin: 'left',
                 }}
@@ -7683,7 +8623,6 @@ function ToastNotif({ notif, onDismiss, T, isDark }) {
         </motion.div>
     );
 }
-
 // ─── Connection status indicator ──────────────────────────────────────────────
 function ConnectionBanner({ T, isDark }) {
     const [offline, setOffline] = useState(!navigator.onLine);
@@ -7815,6 +8754,7 @@ function DashboardShell({ onLogout }) {
 
     // ─── WebSocket notification socket ─────────────────────────────────────────
     const notifSocketRef = useRef(null);
+    const activeTabRef    = useRef(activeTab);
 
     // ────────────────────────────────────────────────────────────────────────────
     // Init: load light profile + connect notification WS
@@ -7853,35 +8793,36 @@ function DashboardShell({ onLogout }) {
     // ────────────────────────────────────────────────────────────────────────────
     // Handle real-time push
     // ────────────────────────────────────────────────────────────────────────────
+    // Garde activeTabRef à jour à chaque changement d'onglet
+    useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+
     const handleIncomingNotification = useCallback((notif) => {
-        // Update badges
-        if (notif.type === 'new_message' && activeTab !== 'messages') {
+        const currentTab = activeTabRef.current;
+
+        if (notif.type === 'new_message' && currentTab !== 'messages') {
             setBadges(prev => ({ ...prev, messages: prev.messages + 1 }));
         }
         if (notif.type === 'like' || notif.type === 'super_like') {
             setBadges(prev => ({ ...prev, likes: prev.likes + 1 }));
         }
 
-        // Show toast only if not on relevant tab
         const suppressOn = {
             new_message: 'messages',
-            match: null, // always show
-            super_like: null,
-            like: 'likes',
+            match:       null,
+            super_like:  null,
+            like:        'likes',
         };
         const suppress = suppressOn[notif.type];
-        if (!suppress || activeTab !== suppress) {
+        if (!suppress || currentTab !== suppress) {
             addToast({
                 type:   notif.type,
-                title:  notif.title,
-                body:   notif.body || notif.message,
-                avatar: notif.actor_avatar,
-                id:     notif.id,
+                title:  notif.title  || (notif.type === 'new_message' ? 'Nouveau message' : notif.type === 'match' ? 'Nouveau match !' : 'Notification'),
+                body:   notif.body   || notif.message || '',
+                avatar: notif.actor_avatar || notif.avatar || null,
                 tab:    notif.type === 'new_message' ? 'messages' : 'likes',
             });
         }
-    }, [activeTab]);
-
+    }, []);
     const addToast = useCallback((notif) => {
         const id = ++toastIdRef.current;
         setToasts(prev => [...prev.slice(-2), { ...notif, _id: id }]); // max 3
@@ -8072,6 +9013,7 @@ function DashboardShell({ onLogout }) {
                         key={toast._id}
                         notif={toast}
                         onDismiss={() => dismissToast(toast._id)}
+                        onTap={() => handleToastTap(toast)}
                         T={T}
                         isDark={isDark}
                     />

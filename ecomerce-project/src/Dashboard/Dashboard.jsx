@@ -1,7 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════
-//  LoveLine — Dashboard Principal
-//  Point d'entrée du dashboard : orchestre tous les onglets
-// ═══════════════════════════════════════════════════════════════════════════
+
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ProfileAPI, SubscriptionAPI, createPresenceSocket, TokenService } from './api';

@@ -1,7 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
-   LoveLine — Explore Tab
-   Category-based discovery with art-level interface
-   ═══════════════════════════════════════════════════════════════ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from './useTheme.jsx';
