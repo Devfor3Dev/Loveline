@@ -42,13 +42,13 @@ const getMainPhoto = (profile) => {
     const url = main?.url || profile.photo || profile.avatar || null;
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://localhost:8000${url}`;
+    return getBaseUrl() + url;
 };
 
 const photoUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://localhost:8000${url}`;
+   return getBaseUrl() + url;
 };
 
 //calcul de l'âge de l'utilisateur
@@ -1139,7 +1139,7 @@ function SwipeCard({
     const photos = profile.photos?.length > 0
         ? profile.photos
         : [{ url: profile.photo
-                ? `http://localhost:8000${profile.photo}`
+                ? getBaseUrl() + profile.photo
                 : (profile.avatar || 'https://via.placeholder.com/400x600') }];
 
     // Track direction for overlay
@@ -3605,7 +3605,7 @@ function LikeCard({ profile, onLikeBack, onNope, T, isDark }) {
             }}
         >
             <img
-                src={profile.photos?.[0]?.url || (profile.photo ? `http://localhost:8000${profile.photo}` : null) || profile.avatar}
+                src={profile.photos?.[0]?.url || (profile.photo ?  getBaseUrl() + profile.photo : null) || profile.avatar}
                 alt={profile.first_name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
@@ -3709,7 +3709,7 @@ function TopPickCard({ profile, onLike, T, isDark }) {
             }}
         >
             <img
-                src={profile.photos?.[0]?.url || (profile.photo ? `http://localhost:8000${profile.photo}` : null) || profile.avatar}
+                src={profile.photos?.[0]?.url || (profile.photo ? getBaseUrl() + profile.photo : null) || profile.avatar}
                 alt={profile.first_name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
@@ -6058,7 +6058,7 @@ function MessagesTab({ isPremium, initialMatchId }) {
                 ...m,
                 their_name:   m.other_first_name || m.their_name || '',
                 their_avatar: m.other_photo
-                    ? (m.other_photo.startsWith('http') ? m.other_photo : `http://localhost:8000${m.other_photo}`)
+                   ? (m.other_photo.startsWith('http') ? m.other_photo : getBaseUrl() + m.other_photo)
                     : null,
                 has_conversation: m.conversation_id != null,
             });
