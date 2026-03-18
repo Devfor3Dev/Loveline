@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Analytics } from '@vercel/analytics/react';
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 import { AuthProvider } from '../AuthPages/AuthContext';
@@ -107,6 +108,7 @@ export default function App() {
                     {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
+                <Analytics />
             </BrowserRouter>
         </AuthProvider>
     );

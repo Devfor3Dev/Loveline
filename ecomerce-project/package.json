@@ -15,6 +15,7 @@
     "@gsap/react": "^2.1.2",
     "@react-spring/parallax": "^10.0.3",
     "@studio-freight/lenis": "^1.0.42",
+    "@vercel/analytics": "^2.0.1",
     "aos": "^2.3.4",
     "canvas-confetti": "^1.9.4",
     "emoji-mart": "^5.6.0",
