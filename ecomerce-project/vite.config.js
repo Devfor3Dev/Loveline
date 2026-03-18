@@ -1,25 +1,13 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
-// vite.config.js — à la racine de ton projet React
 export default defineConfig({
   plugins: [react()],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-      '/media': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-      '/ws': {
-        target: 'ws://localhost:8000',
-        ws: true,
-        changeOrigin: true,
-      },
-    }
-  }
+  // Le proxy n'est utile qu'en développement local
+})
+```
+
+### 2. Créer un fichier `.env.production` à la racine de ton projet React
+```
+VITE_API_URL=https://ton-backend.onrender.com
 })
