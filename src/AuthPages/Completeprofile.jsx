@@ -1,5 +1,5 @@
 /**
- * ProfileCompletion.jsx  ·  LoveLine  ·  Université de Kara
+ * ProfileCompletion.jsx
  * ──────────────────────────────────────────────────────────
  * World-class dating app profile setup wizard.
  * Theme: Premium, Professional (Cream, Lavender, RoseDeep, Gold)
@@ -87,8 +87,8 @@ const T = {
     r24:'24px', r28:'28px', r32:'32px', r48:'48px', r64:'64px',
     sp4:'4px', sp8:'8px', sp12:'12px', sp16:'16px', sp20:'20px',
     sp24:'24px', sp28:'28px', sp32:'32px', sp40:'40px', sp48:'48px',
-    fontDisplay: "'Outfit', sans-serif",
-    fontBody: "'Inter', sans-serif",
+    fontDisplay: "'Cormorant Garamond', serif",
+    fontBody: "'Raleway', sans-serif",
 };
 
 // Added Academics step, adjusted percentages for 7 steps
