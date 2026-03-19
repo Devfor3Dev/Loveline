@@ -2380,7 +2380,7 @@ export default function ProfileCompletion() {
                 interest_ids: interestIds,
             };
 
-           const res = await fetch(BASE_URL + '/api/profile/me/complete/', {
+           const res = await fetch(BASE_URL + '/api/profile/me/complete', {
                 method:  'POST',
                 headers: {
                     'Content-Type': 'application/json',
