@@ -2255,6 +2255,367 @@ function FilterBar({ filters, onChange, T, isDark }) {
     );
 }
 
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  EXPLORE — Composants helper
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Styles visuels par slug (gradient + icône Lucide)
+var CATEGORY_STYLES = {
+    // ── Correspondance exacte avec INTERESTS_LIST ──────────────────────────
+    music:    { gradient: 'linear-gradient(135deg,#2D1B69,#7C3AED)', Icon: BellRing },
+    travel:   { gradient: 'linear-gradient(135deg,#0C4A6E,#0891B2)', Icon: Navigation },
+    coffee:   { gradient: 'linear-gradient(135deg,#431407,#92400E)', Icon: Sparkles },
+    coding:   { gradient: 'linear-gradient(135deg,#052E16,#059669)', Icon: Sparkles },
+    art:      { gradient: 'linear-gradient(135deg,#4A044E,#DC2626)', Icon: Sparkles },
+    books:    { gradient: 'linear-gradient(135deg,#1E3A5F,#B45309)', Icon: Sparkles },
+    gaming:   { gradient: 'linear-gradient(135deg,#0F172A,#1D4ED8)', Icon: Sparkles },
+    cinema:   { gradient: 'linear-gradient(135deg,#1C1917,#880E4F)', Icon: Star },
+    fitness:  { gradient: 'linear-gradient(135deg,#052E16,#16A34A)', Icon: Zap },
+    cooking:  { gradient: 'linear-gradient(135deg,#431407,#D97706)', Icon: Sparkles },
+    nature:   { gradient: 'linear-gradient(135deg,#052E16,#16A34A)', Icon: Compass },
+    dance:    { gradient: 'linear-gradient(135deg,#831843,#F43F5E)', Icon: Sparkles },
+    photo:    { gradient: 'linear-gradient(135deg,#1A0820,#0891B2)', Icon: Camera },
+    uni:      { gradient: 'linear-gradient(135deg,#373B44,#4286F4)', Icon: GraduationCap },
+    football: { gradient: 'linear-gradient(135deg,#052E16,#22C55E)', Icon: Zap },
+    globe:    { gradient: 'linear-gradient(135deg,#0369A1,#2563EB)', Icon: Navigation },
+    poetry:   { gradient: 'linear-gradient(135deg,#1E3A5F,#B45309)', Icon: PenLine },
+    awards:   { gradient: 'linear-gradient(135deg,#78350F,#D4AF37)', Icon: Star },
+    // ── Filières ───────────────────────────────────────────────────────────
+    fast:     { gradient: 'linear-gradient(135deg,#0F2027,#2C5364)', Icon: Sparkles },
+    fdsp:     { gradient: 'linear-gradient(135deg,#1A1A2E,#16213E)', Icon: Shield },
+    flesh:    { gradient: 'linear-gradient(135deg,#2D1B69,#11998E)', Icon: Sparkles },
+    fss:      { gradient: 'linear-gradient(135deg,#0F0C29,#302B63)', Icon: Sparkles },
+    faseg:    { gradient: 'linear-gradient(135deg,#134E5E,#71B280)', Icon: BarChart2 },
+    isapu:    { gradient: 'linear-gradient(135deg,#373B44,#4286F4)', Icon: GraduationCap },
+    isma:     { gradient: 'linear-gradient(135deg,#1D4350,#A43931)', Icon: Sparkles },
+    pse:      { gradient: 'linear-gradient(135deg,#005C97,#363795)', Icon: Sparkles },
+    default:  { gradient: 'linear-gradient(135deg,#AD1457,#E91E63)', Icon: Compass },
+};
+// ── Carte catégorie ───────────────────────────────────────────────────────────
+function CategoryCard({ category, onClick, T, isDark }) {
+    var style = CATEGORY_STYLES[category.slug] || CATEGORY_STYLES.default;
+    var IconComp = style.Icon;
+
+    return (
+        <motion.div
+            whileTap={{ scale: 0.95 }}
+            onClick={function() { onClick(category); }}
+            style={{
+                borderRadius: 24,
+                overflow: 'hidden',
+                cursor: 'pointer',
+                position: 'relative',
+                aspectRatio: '4/3',
+                background: style.gradient,
+                boxShadow: isDark
+                    ? '0 8px 24px rgba(0,0,0,0.40)'
+                    : '0 6px 20px rgba(0,0,0,0.14)',
+            }}
+        >
+            {/* Cercle déco */}
+            <div style={{
+                position: 'absolute', top: -24, right: -24,
+                width: 90, height: 90, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.08)', pointerEvents: 'none',
+            }} />
+            {/* Overlay dégradé bas */}
+            <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(160deg,rgba(0,0,0,0),rgba(0,0,0,0.52))',
+            }} />
+
+            <div style={{
+                position: 'absolute', inset: 0,
+                padding: '14px 16px',
+                display: 'flex', flexDirection: 'column',
+                justifyContent: 'space-between',
+            }}>
+                {/* Icône en haut */}
+                <div style={{
+                    width: 36, height: 36, borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.18)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255,255,255,0.25)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    alignSelf: 'flex-start',
+                }}>
+                    <IconComp size={17} color="#fff" strokeWidth={1.8} />
+                </div>
+
+                {/* Nom + compteur en bas */}
+                <div>
+                    <div style={{
+                        fontFamily: "'Poppins',sans-serif",
+                        fontSize: 14, fontWeight: 700, color: '#fff',
+                        letterSpacing: '-0.01em',
+                        textShadow: '0 1px 4px rgba(0,0,0,0.30)',
+                    }}>
+                        {category.name}
+                    </div>
+                    {category.count > 0 && (
+                        <div style={{
+                            fontFamily: "'Poppins',sans-serif",
+                            fontSize: 11, color: 'rgba(255,255,255,0.65)',
+                            marginTop: 2,
+                        }}>
+                            {category.count} membre{category.count !== 1 ? 's' : ''}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
+// ── Carte profil dans la grille ───────────────────────────────────────────────
+function ProfileGridItem({ profile, onLike, onView, T, isDark }) {
+    var likedState = useState(false);
+    var liked      = likedState[0];
+    var setLiked   = likedState[1];
+
+    var photoSrc = profile.photo
+        ? (profile.photo.startsWith('http') ? profile.photo : 'http://localhost:8000' + profile.photo)
+        : null;
+
+    return (
+        <motion.div
+            whileTap={{ scale: 0.97 }}
+            onClick={function() { if (onView) onView(profile); }}
+            style={{
+                borderRadius: 20, overflow: 'hidden',
+                cursor: 'pointer', position: 'relative',
+                aspectRatio: '3/4',
+                background: isDark ? '#1A0D22' : '#F0EBF6',
+                boxShadow: isDark
+                    ? '0 4px 20px rgba(0,0,0,0.40)'
+                    : '0 4px 16px rgba(0,0,0,0.10)',
+            }}
+        >
+            {photoSrc
+                ? <img src={photoSrc} alt={profile.first_name}
+                       style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+                : <div style={{
+                    position: 'absolute', inset: 0,
+                    background: 'linear-gradient(135deg,#AD1457,#E91E63)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: "'Poppins',sans-serif", fontSize: 36, fontWeight: 700, color: '#fff',
+                  }}>
+                    {profile.first_name ? profile.first_name[0].toUpperCase() : '?'}
+                  </div>
+            }
+
+            {/* Overlay bas */}
+            <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.75) 100%)',
+            }} />
+
+            {/* Bouton like */}
+            <motion.button
+                whileTap={{ scale: 0.82 }}
+                onClick={function(e) {
+                    e.stopPropagation();
+                    setLiked(true);
+                    if (onLike) onLike(profile.id);
+                }}
+                style={{
+                    position: 'absolute', top: 10, right: 10,
+                    width: 36, height: 36, borderRadius: '50%',
+                    background: liked ? '#E91E63' : 'rgba(255,255,255,0.20)',
+                    backdropFilter: 'blur(12px)',
+                    border: '1.5px solid rgba(255,255,255,0.30)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer',
+                    boxShadow: liked ? '0 4px 16px rgba(233,30,99,0.50)' : 'none',
+                    transition: 'background 0.2s, box-shadow 0.2s',
+                }}
+            >
+                <Heart
+                    size={15}
+                    color="#fff"
+                    fill={liked ? '#fff' : 'none'}
+                    strokeWidth={2}
+                />
+            </motion.button>
+
+            {/* Infos bas */}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 14px' }}>
+                <div style={{
+                    fontFamily: "'Poppins',sans-serif",
+                    fontSize: 14, fontWeight: 700, color: '#fff',
+                    textShadow: '0 1px 4px rgba(0,0,0,0.40)',
+                }}>
+                    {profile.first_name}
+                </div>
+                {profile.department && (
+                    <div style={{
+                        fontFamily: "'Poppins',sans-serif",
+                        fontSize: 10, color: 'rgba(255,255,255,0.70)',
+                        marginTop: 2,
+                    }}>
+                        {profile.department}
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
+}
+
+// ── Fiche profil détaillée (bottom sheet) ─────────────────────────────────────
+function ProfileSheet({ profile, onClose, onLike, T, isDark }) {
+    var photoSrc = profile.photo
+        ? (profile.photo.startsWith('http') ? profile.photo : 'http://localhost:8000' + profile.photo)
+        : null;
+
+    var likedState = useState(false);
+    var liked      = likedState[0];
+    var setLiked   = likedState[1];
+
+    var borderClr = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            style={{
+                position: 'fixed', inset: 0, zIndex: 1100,
+                background: 'rgba(0,0,0,0.55)',
+                backdropFilter: 'blur(4px)',
+                display: 'flex', alignItems: 'flex-end',
+            }}
+        >
+            <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+                onClick={function(e) { e.stopPropagation(); }}
+                style={{
+                    width: '100%',
+                    maxHeight: '88vh',
+                    overflowY: 'auto',
+                    background: isDark ? '#130A1A' : '#FFFFFF',
+                    borderRadius: '28px 28px 0 0',
+                    boxShadow: '0 -16px 64px rgba(0,0,0,0.30)',
+                }}
+            >
+                {/* Poignée */}
+                <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 14, paddingBottom: 6 }}>
+                    <div style={{ width: 40, height: 4, borderRadius: 2, background: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)' }} />
+                </div>
+
+                {/* Photo */}
+                <div style={{ position: 'relative', height: 280, margin: '0 16px', borderRadius: 20, overflow: 'hidden', background: 'linear-gradient(135deg,#AD1457,#E91E63)' }}>
+                    {photoSrc
+                        ? <img src={photoSrc} alt={profile.first_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Poppins',sans-serif", fontSize: 64, fontWeight: 700, color: '#fff' }}>
+                            {profile.first_name ? profile.first_name[0].toUpperCase() : '?'}
+                          </div>
+                    }
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(0,0,0,0.65) 100%)' }} />
+                    <div style={{ position: 'absolute', bottom: 16, left: 18 }}>
+                        <div style={{ fontFamily: "'Poppins',sans-serif", fontSize: 22, fontWeight: 700, color: '#fff' }}>{profile.first_name}</div>
+                        {profile.department && (
+                            <div style={{ fontFamily: "'Poppins',sans-serif", fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>{profile.department}</div>
+                        )}
+                    </div>
+                    {/* Bouton fermer */}
+                    <button onClick={onClose} style={{
+                        position: 'absolute', top: 12, right: 12,
+                        width: 34, height: 34, borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)',
+                        border: '1px solid rgba(255,255,255,0.25)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', color: '#fff',
+                    }}>
+                        <X size={16} strokeWidth={2.2} />
+                    </button>
+                </div>
+
+                {/* Contenu */}
+                <div style={{ padding: '20px 20px 32px' }}>
+
+                    {/* Bio — seulement si elle existe */}
+                    {profile.bio && profile.bio.trim().length > 0 && (
+                        <div style={{ marginBottom: 20 }}>
+                            <div style={{ fontFamily: "'Poppins',sans-serif", fontSize: 12, fontWeight: 600, color: T.textMuted, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Bio</div>
+                            <p style={{ fontFamily: "'Poppins',sans-serif", fontSize: 14, color: T.text, lineHeight: 1.65, margin: 0 }}>{profile.bio}</p>
+                        </div>
+                    )}
+
+                    {/* Infos — seulement si elles existent */}
+                    {(profile.department || profile.degree) && (
+                        <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+                            {profile.department && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 50, background: isDark ? 'rgba(233,30,99,0.10)' : 'rgba(233,30,99,0.07)', border: '1px solid rgba(233,30,99,0.20)' }}>
+                                    <GraduationCap size={13} color="#BE185D" strokeWidth={2} />
+                                    <span style={{ fontFamily: "'Poppins',sans-serif", fontSize: 12, color: '#BE185D', fontWeight: 500 }}>{profile.department}</span>
+                                </div>
+                            )}
+                            {profile.degree && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 50, background: isDark ? 'rgba(242,201,76,0.10)' : 'rgba(242,201,76,0.12)', border: '1px solid rgba(242,201,76,0.30)' }}>
+                                    <Star size={13} color="#B45309" strokeWidth={2} />
+                                    <span style={{ fontFamily: "'Poppins',sans-serif", fontSize: 12, color: '#B45309', fontWeight: 500 }}>{profile.degree}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Intérêts — seulement s'ils existent */}
+                    {profile.interests && profile.interests.length > 0 && (
+                        <div style={{ marginBottom: 24 }}>
+                            <div style={{ fontFamily: "'Poppins',sans-serif", fontSize: 12, fontWeight: 600, color: T.textMuted, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>Passions</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                {profile.interests.map(function(interest, i) {
+                                    var colors = ['#E91E63','#9C27B0','#2196F3','#4CAF50','#FF9800'];
+                                    var color  = colors[i % colors.length];
+                                    return (
+                                        <span key={i} style={{
+                                            padding: '6px 14px', borderRadius: 50,
+                                            background: color + '15',
+                                            border: '1px solid ' + color + '30',
+                                            fontFamily: "'Poppins',sans-serif", fontSize: 12,
+                                            color: color, fontWeight: 500,
+                                        }}>
+                                            {interest}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Bouton Like */}
+                    <motion.button
+                        whileTap={{ scale: 0.94 }}
+                        onClick={function() { setLiked(true); if (onLike) onLike(profile.id); }}
+                        style={{
+                            width: '100%', padding: '16px',
+                            borderRadius: 18,
+                            background: liked
+                                ? 'linear-gradient(135deg,#AD1457,#E91E63)'
+                                : isDark ? 'rgba(233,30,99,0.10)' : 'rgba(233,30,99,0.07)',
+                            border: liked ? 'none' : '1.5px solid rgba(233,30,99,0.25)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                            cursor: 'pointer',
+                            boxShadow: liked ? '0 8px 28px rgba(173,20,87,0.40)' : 'none',
+                            transition: 'all 0.25s',
+                        }}
+                    >
+                        <Heart size={18} color={liked ? '#fff' : '#E91E63'} fill={liked ? '#fff' : 'none'} strokeWidth={2} />
+                        <span style={{ fontFamily: "'Poppins',sans-serif", fontSize: 15, fontWeight: 700, color: liked ? '#fff' : '#E91E63' }}>
+                            {liked ? 'Liké !' : 'Liker ce profil'}
+                        </span>
+                    </motion.button>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // DISCOVER TAB — Main export
 // ══════════════════════════════════════════════════════════════════════════════
