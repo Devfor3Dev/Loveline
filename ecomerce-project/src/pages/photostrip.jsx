@@ -3,8 +3,12 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
+//import des photos
+
+import photo1 from '../assets/Abel.jpg';
+
 const STRIP_PHOTOS = [
-    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
+    { src: photo1, label: 'Abel   19' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
