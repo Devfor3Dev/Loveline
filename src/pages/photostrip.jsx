@@ -11,9 +11,9 @@ import photoArlette from '../assets/grace.jpg';
 
 
 const STRIP_PHOTOS = [
-    { src: photoAbel, label: 'Abel   19' },
-    { src: photoVivan, label: 'Vivian   22' },
-    { src: photoArlette, label: 'Arlette   20' },
+    { src: photoVivian, label: 'Abel   19' },
+    { src: photoVivuan, label: 'Vivian   22' },
+    { src: photoVivian, label: 'Arlette   20' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Constant' },
     { src:'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
