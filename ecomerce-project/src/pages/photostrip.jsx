@@ -2,15 +2,14 @@ import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
-import AbelPhoto from '../assets/abel.jpg';
-import GracePhoto from '../assets/grace.jpg';
+
 const STRIP_PHOTOS = [
-    { src: AbelPhoto, label: "Abel" },
-    { src: 'GracePhoto', label: 'Grâce' },
-    { src: 'GracePhoto', label: 'Gloria' },
+    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
+    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
+    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Constant' },
-    { src: '', label: 'Ornella' },
+    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
 ];
 
 function PhotoCard({ src, label }) {
