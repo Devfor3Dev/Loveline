@@ -2427,7 +2427,7 @@ export default function ProfileCompletion() {
                 const fd = new FormData();
                 fd.append('photo', blob, 'profile.jpg');
 
-              const photoRes = await fetch(BASE_URL + '/api/profile/me/photo/', {
+              const photoRes = await fetch(BASE_URL + '/api/profile/me/photo', {
                     method:  'POST',
                     headers: { 'Authorization': `Bearer ${freshToken}` },
                     body:    fd,
