@@ -7,7 +7,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 import photoAbel from '../assets/Abel.jpg';
 import photoVivian from '../assets/8ca6f4dc-450f-4369-856c-043b515e0ddf.jpg';
-import photoArlette from '../assets/Arlette.png';
+import photoArlette from '../assets/grace.jpg';
 
 
 const STRIP_PHOTOS = [
