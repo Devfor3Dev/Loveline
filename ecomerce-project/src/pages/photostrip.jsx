@@ -9,9 +9,9 @@ import photo1 from '../assets/Abel.jpg';
 
 const STRIP_PHOTOS = [
     { src: photo1, label: 'Abel   19' },
-    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
-    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
-    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
+    { src: photo1, label: 'Abel   19' },
+    { src: photo1, label: 'Abel   19' },
+    { src: photo1, label: 'Abel   19' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Constant' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
 ];
