@@ -3,10 +3,17 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
+//import des photos
+
+import photoAbel from '../assets/Abel.jpg';
+import photoVivian from '../assets/8ca6f4dc-450f-4369-856c-043b515e0ddf.jpg';
+import photoArlette from '../assets/Arlette.png';
+
+
 const STRIP_PHOTOS = [
-    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
-    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
-    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
+    { src: photoAbel, label: 'Abel   19' },
+    { src: photoVivan, label: 'Vivian   22' },
+    { src: photoArlette, label: 'Arlette   20' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Constant' },
     { src:'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
