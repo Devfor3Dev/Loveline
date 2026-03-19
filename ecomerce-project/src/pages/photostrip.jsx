@@ -6,10 +6,11 @@ gsap.registerPlugin(ScrollTrigger);
 //import des photos
 
 import photo1 from '../assets/Abel.jpg';
+import photo2 from '../assets/8ca6f4dc-450f-4369-856c-043b515e0ddf.jpg;
 
 const STRIP_PHOTOS = [
     { src: photo1, label: 'Abel   19' },
-    { src: photo1, label: 'Abel   19' },
+    { src: photo2, label: 'Vivian   22' },
     { src: photo1, label: 'Abel   19' },
     { src: photo1, label: 'Abel   19' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Constant' },
