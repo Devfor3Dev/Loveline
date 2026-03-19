@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import Navbar from '../pages/nav_bar.jsx';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
 
@@ -2266,7 +2267,7 @@ export default function ProfileCompletion() {
 
     useEffect(() => {
         const token = localStorage.getItem('ll_access');
-        fetch('/api/interests/', {
+        fetch(BASE_URL + '/api/interests/', {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         })
             .then(r => r.json())
@@ -2379,7 +2380,7 @@ export default function ProfileCompletion() {
                 interest_ids: interestIds,
             };
 
-            const res = await fetch('/api/profile/me/complete', {
+           const res = await fetch(BASE_URL + '/api/profile/me/complete/', {
                 method:  'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2391,7 +2392,7 @@ export default function ProfileCompletion() {
             if (res.status === 401) {
                 const refresh = localStorage.getItem('ll_refresh');
                 if (!refresh) throw new Error('Session expirée, reconnectez-vous');
-                const rr = await fetch('/api/token/refresh', {
+                const rr = await fetch(BASE_URL + '/api/token/refresh', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ refresh }),
@@ -2400,7 +2401,7 @@ export default function ProfileCompletion() {
                 const { access } = await rr.json();
                 localStorage.setItem('ll_access', access);
                 // rejouer
-                const res2 = await fetch('/api/profile/me/complete', {
+             const res2 = await fetch(BASE_URL + '/api/profile/me/complete', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2426,7 +2427,7 @@ export default function ProfileCompletion() {
                 const fd = new FormData();
                 fd.append('photo', blob, 'profile.jpg');
 
-                const photoRes = await fetch('/api/profile/me/photo', {
+              const photoRes = await fetch(BASE_URL + '/api/profile/me/photo/', {
                     method:  'POST',
                     headers: { 'Authorization': `Bearer ${freshToken}` },
                     body:    fd,
