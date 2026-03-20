@@ -3966,7 +3966,7 @@ function LikeCard({ profile, onLikeBack, onNope, T, isDark }) {
             }}
         >
             <img
-                src={profile.photos?.[0]?.url || (profile.photo ? `http://localhost:8000${profile.photo}` : null) || profile.avatar}
+                src={profile.photos?.[0]?.url || (profile.photo ? getBaseUrl() + profile.photo : null) || profile.avatar}
                 alt={profile.first_name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
@@ -4070,7 +4070,7 @@ function TopPickCard({ profile, onLike, T, isDark }) {
             }}
         >
             <img
-                src={profile.photos?.[0]?.url || (profile.photo ? `http://localhost:8000${profile.photo}` : null) || profile.avatar}
+                src={profile.photos?.[0]?.url || (profile.photo ? getBaseUrl() + profile.photo : null) || profile.avatar}
                 alt={profile.first_name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
