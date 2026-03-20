@@ -1139,7 +1139,7 @@ function SwipeCard({
     const photos = profile.photos?.length > 0
         ? profile.photos
         : [{ url: profile.photo
-                ? `http://localhost:8000${profile.photo}`
+                ? getBaseUrl() + profile.photo
                 : (profile.avatar || 'https://via.placeholder.com/400x600') }];
 
     // Track direction for overlay
