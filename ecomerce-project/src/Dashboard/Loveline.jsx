@@ -42,13 +42,13 @@ const getMainPhoto = (profile) => {
     const url = main?.url || profile.photo || profile.avatar || null;
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://localhost:8000${url}`;
+    return getBaseUrl() + url;
 };
 
 const photoUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://localhost:8000${url}`;
+    return getBaseUrl() + url;;
 };
 
 //calcul de l'âge de l'utilisateur
