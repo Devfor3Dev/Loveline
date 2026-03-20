@@ -74,7 +74,7 @@ export default function AuthPage() {
     const auth = useAuth() || { register: async () => {}, login: async () => {} };
     const { register, login } = auth;
 
-    const [isRegister, setIsRegister] = useState(false); // TRUE = Inscription, FALSE = Connexion
+    const [isRegister, setIsRegister] = useState(true); // TRUE = Inscription, FALSE = Connexion
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirm: '' });
     const [errors, setErrors] = useState({});
