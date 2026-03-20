@@ -137,7 +137,7 @@ function PhotoGrid({ photos, onUpload, onDelete, onSetMain, T, isDark }) {
       <input ref={inputRef} type="file" multiple accept="image/*" style={{ display: 'none' }}
         onChange={e => {
           const fd = new FormData();
-          Array.from(e.target.files).forEach(f => fd.append('photos', f));
+          Array.from(e.target.files).forEach(f => fd.append('photo', f));
           onUpload(fd);
         }} />
       <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: T.textMuted, lineHeight: 1.6, marginBottom: 14 }}>
