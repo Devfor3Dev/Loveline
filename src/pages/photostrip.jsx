@@ -5,17 +5,18 @@ gsap.registerPlugin(ScrollTrigger);
 
 //import des photos
 
-import photo1 from '../assets/Abel.jpg';
-import photo2 from '../assets/8ca6f4dc-450f-4369-856c-043b515e0ddf.jpg';
-import photo3 from '../assets/Arlette.png';
+import photoAbel from '../assets/Abel.jpg';
+import photoVivian from '../assets/8ca6f4dc-450f-4369-856c-043b515e0ddf.jpg';
+import photoArlette from '../assets/grace.jpg';
+
 
 const STRIP_PHOTOS = [
-    { src: photo1, label: 'Abel   19' },
-    { src: photo2, label: 'Vivian   22' },
-    { src: photo3, label: 'Arlette   20' },
-    { src: photo1, label: 'Abel   19' },
-    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Constant' },
+    { src: photoVivian, label: 'Abel   19' },
+    { src: photoVivuan, label: 'Vivian   22' },
+    { src: photoVivian, label: 'Arlette   20' },
     { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
+    { src: 'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Constant' },
+    { src:'https://images.unsplash.com/photo-1506836467174-27f1042aa48c?w=320&q=80', label: 'Arlette' },
 ];
 
 function PhotoCard({ src, label }) {

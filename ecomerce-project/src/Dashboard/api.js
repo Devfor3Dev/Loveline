@@ -107,7 +107,7 @@ export const profileAPI = {
       apiFetch('/api/profile/me/', { method: 'PATCH', body: JSON.stringify(data) }),
 
   uploadPhotos: (formData) =>
-      apiFormData('/api/profile/photos/', formData, 'POST'),
+      apiFormData('/api/profile/me/photos', formData, 'POST'),
 
   deletePhoto: (photoId) =>
       apiFetch(`/api/profile/photos/${photoId}/`, { method: 'DELETE' }),

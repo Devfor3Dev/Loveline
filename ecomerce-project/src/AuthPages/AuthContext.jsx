@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }) => {
             setToken(data.access);
 
             // On définit un faux utilisateur en attendant un endpoint /me/
-            const profileRes = await fetch(`${API.BASE_URL}/api/profile/me`, {
+            const profileRes = await fetch(`${API.BASE_URL}/profile/me`, {
                 headers: { 'Authorization': `Bearer ${data.access}` }
             });
             let profileComplete = false;

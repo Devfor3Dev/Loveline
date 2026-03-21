@@ -167,7 +167,7 @@ export default function Navbar() {
                 </ul>
 
                 {/* CTA */}
-                <a href="http://localhost:5173/auth" className="nav-cta">
+                <a href="https://loveline-love.vercel.app/auth" className="nav-cta">
                     Rejoindre
                 </a>
 
