@@ -2375,7 +2375,7 @@ function ProfileGridItem({ profile, onLike, onView, T, isDark }) {
     var setLiked   = likedState[1];
 
     var photoSrc = profile.photo
-        ? (profile.photo.startsWith('http') ? profile.photo : 'http://localhost:8000' + profile.photo)
+       ? (profile.photo.startsWith('http') ? profile.photo : getBaseUrl() + profile.photo)
         : null;
 
     return (
@@ -2465,7 +2465,7 @@ function ProfileGridItem({ profile, onLike, onView, T, isDark }) {
 // ── Fiche profil détaillée (bottom sheet) ─────────────────────────────────────
 function ProfileSheet({ profile, onClose, onLike, T, isDark }) {
     var photoSrc = profile.photo
-        ? (profile.photo.startsWith('http') ? profile.photo : 'http://localhost:8000' + profile.photo)
+        ? (profile.photo.startsWith('http') ? profile.photo : getBaseUrl() + profile.photo)
         : null;
 
     var likedState = useState(false);
