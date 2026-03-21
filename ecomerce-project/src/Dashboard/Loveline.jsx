@@ -3573,22 +3573,41 @@ function ExploreTab() {
             <div style={{ padding: '0 16px' }}>
 
                 {/* ── FILTRE ÂGE ── */}
-                <div style={{ marginBottom: 24, marginTop: 20 }}>
-                    <button onClick={() => setShowAgeFilter(s => !s)} style={{
-                        display:'flex', alignItems:'center', gap:8,
+                <div 
+                   style={
+                   { 
+                      marginBottom: 24, 
+                      marginTop: 20 
+                   }
+                   }>
+                    <button 
+                       onClick={() => setShowAgeFilter(s => !s)} style={{
+                        display:'flex', 
+                        alignItems:'center', 
+                        gap:8,
                         background: isDark
                             ? 'rgba(242,201,76,0.10)'
                             : 'rgba(190,24,93,0.07)',
-                        border:`1.5px solid rgba(190,24,93,0.20)`,
-                        borderRadius:50, padding:'10px 18px', cursor:'pointer',
-                        fontFamily:"'Poppins',sans-serif", fontSize:12, fontWeight:700,
-                        color: '#BE185D',
-                        boxShadow:'0 2px 12px rgba(190,24,93,0.10)',
+                          border:`1.5px solid rgba(190,24,93,0.20)`,
+                          borderRadius:50, 
+                          padding:'10px 18px', 
+                          cursor:'pointer',
+                          fontFamily:"'Poppins',sans-serif", fontSize:12, fontWeight:700,
+                          color: '#BE185D',
+                          boxShadow:'0 2px 12px rgba(190,24,93,0.10)',
                     }}>
-                        <Filter size={13} strokeWidth={2.5} color="#BE185D" />
+                        <Filter 
+                           size={13} 
+                           strokeWidth={2.5} 
+                           color="#BE185D" 
+                           />
                         {ageRange[0]}–{ageRange[1]} ans
                         <ChevronRight size={13} color="#BE185D"
-                                      style={{ transform: showAgeFilter ? 'rotate(90deg)' : 'rotate(0deg)', transition:'transform 0.25s' }} />
+                                      style={
+                                      { 
+                                         transform: showAgeFilter ? 'rotate(90deg)' : 'rotate(0deg)', 
+                                         transition:'transform 0.25s' }
+                                      } />
                     </button>
 
                     <AnimatePresence>
@@ -3605,12 +3624,41 @@ function ExploreTab() {
                                     boxShadow:'0 8px 32px rgba(190,24,93,0.12)',
                                 }}>
                                     {[
-                                        { label:'Âge min', val:ageRange[0], min:18, max:ageRange[1]-1, idx:0 },
-                                        { label:'Âge max', val:ageRange[1], min:ageRange[0]+1, max:45, idx:1 },
+                                        { 
+                                           label:'Âge min', 
+                                           val:ageRange[0], 
+                                           min:18, 
+                                           max:ageRange[1]-1, 
+                                           idx:0 
+                                        },
+                                        { 
+                                           label:'Âge max', 
+                                           val:ageRange[1], 
+                                           min:ageRange[0]+1, 
+                                           max:45, 
+                                           idx:1 
+                                        },
                                     ].map(r => (
-                                        <div key={r.label} style={{ marginBottom: r.idx === 0 ? 18 : 0 }}>
-                                            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
-                                                <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:12, color:T.textSoft, fontWeight:500 }}>{r.label}</span>
+                                        <div 
+                                           key={r.label} 
+                                           style={{ marginBottom: r.idx === 0 ? 18 : 0 }
+                                           }>
+                                            <div 
+                                               style={
+                                               { 
+                                                  display:'flex', 
+                                                  justifyContent:'space-between', 
+                                                  marginBottom:8 
+                                               }}>
+                                                <span 
+                                                   style={
+                                                   { 
+                                                      fontFamily:"'Poppins',sans-serif", 
+                                                      fontSize:12, 
+                                                      color:T.textSoft, 
+                                                      fontWeight:500 
+                                                   }
+                                                   }>{r.label}</span>
                                                 <span style={{
                                                     fontFamily:"'Poppins',sans-serif", fontSize:12, fontWeight:800,
                                                     background:'linear-gradient(135deg,#F2C94C,#BE185D)',
