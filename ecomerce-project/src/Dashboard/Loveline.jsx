@@ -6467,7 +6467,7 @@ function MessagesTab({ isPremium, initialMatchId }) {
                 ...m,
                 their_name:   m.other_first_name || m.their_name || '',
                 their_avatar: m.other_photo
-                    ? (m.other_photo.startsWith('http') ? m.other_photo : `http://localhost:8000${m.other_photo}`)
+                   ? (m.other_photo.startsWith('http') ? m.other_photo : getBaseUrl() + m.other_photo)
                     : null,
                 has_conversation: m.conversation_id != null,
             });
