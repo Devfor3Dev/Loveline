@@ -1,24 +1,19 @@
 {
-  "name": "ecomerce-project",
+  "name": "loveline-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@emoji-mart/data": "^1.2.1",
-    "@emoji-mart/react": "^1.1.1",
     "@gsap/react": "^2.1.2",
     "@react-spring/parallax": "^10.0.3",
-    "@studio-freight/lenis": "^1.0.42",
     "@vercel/analytics": "^2.0.1",
     "aos": "^2.3.4",
     "canvas-confetti": "^1.9.4",
-    "emoji-mart": "^5.6.0",
     "emoji-picker-react": "^4.18.0",
     "framer-motion": "^12.34.3",
     "gsap": "^3.14.2",
@@ -33,8 +28,6 @@
     "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
-    "@babel/plugin-proposal-optional-chaining": "^7.21.0",
-    "@babel/plugin-transform-optional-chaining": "^7.28.6",
     "@eslint/js": "^9.39.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
