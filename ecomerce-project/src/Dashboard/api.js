@@ -106,6 +106,7 @@ export const profileAPI = {
   update: (data) =>
       apiFetch('/api/profile/me/', { method: 'PATCH', body: JSON.stringify(data) }),
 
+  //normalement optimal mais ..... bon 
   uploadPhotos: (formData) =>
       apiFormData('/api/profile/me/photos', formData, 'POST'),
 
